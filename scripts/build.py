@@ -23,6 +23,8 @@ ANDROID = {
     'arm64': ('arm64-v8a', 'aarch64-linux-android'),
     'x64': ('x86_64', 'x86_64-linux-android'),
 }
+OPENSSL_ARCHS = {'linux-elf', 'linux-armv4', 'linux-aarch64', 'linux-x86_64',
+                 'darwin64-arm64-cc', 'darwin64-x86_64-cc'}
 EXPORTS = ('napi_get_cb_info', 'napi_create_string_utf8', 'napi_throw_error', 'uv_loop_init')
 
 
@@ -52,6 +54,9 @@ def copy_headers(source, destination):
     # tools/install.py has a narrower allowlist.
     for path in (source / 'deps/v8/include').glob('v8*.h'):
         shutil.copyfile(path, headers / path.name)
+    for path in (headers / 'openssl/archs').iterdir():
+        if path.is_dir() and path.name not in OPENSSL_ARCHS:
+            shutil.rmtree(path)
     shutil.copyfile(source / 'src/node_mobile_version.h', headers / 'node_mobile_version.h')
     shutil.copyfile(source / 'LICENSE', destination / 'LICENSE')
     shutil.copyfile(ROOT / 'LICENSE', destination / 'LICENSE-nodejs-mobile')
@@ -122,6 +127,25 @@ def verify_exports(command, prefix=''):
         raise RuntimeError(f'Missing dynamic exports: {sorted(missing)}')
 
 
+def strip_android(library, symbols, toolchain):
+    symbols.parent.mkdir(parents=True)
+    run([toolchain / 'bin/llvm-objcopy', '--only-keep-debug', library, symbols])
+    run([toolchain / 'bin/llvm-strip', '--strip-unneeded', library])
+    run([toolchain / 'bin/llvm-objcopy', f'--add-gnu-debuglink={symbols}', library])
+    size = library.stat().st_size / (1024 * 1024)
+    print(f'{library}: {size:.2f} MiB after stripping.', flush=True)
+
+
+def strip_ios(library, symbols):
+    symbols.parent.mkdir(parents=True)
+    run(['xcrun', 'dsymutil', library, '-o', symbols])
+    if not (symbols / 'Contents/Resources/DWARF/NodeMobile').is_file():
+        raise RuntimeError('Missing iOS debugging symbols.')
+    run(['xcrun', 'strip', '-S', '-x', library])
+    run(['xcrun', 'codesign', '--force', '--sign', '-', library])
+    run(['xcrun', 'codesign', '--verify', '--strict', library])
+
+
 def record(destination, source, target):
     lock = json.loads((ROOT / 'node-source.json').read_text())
     lock['target'] = target
@@ -129,7 +153,10 @@ def record(destination, source, target):
     lock['config_sha256'] = hashlib.sha256((source / 'config.gypi').read_bytes()).hexdigest()
     lock['binary_sha256'] = {path.relative_to(destination).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
                              for path in destination.rglob('*') if path.is_file()
+                             and not path.is_relative_to(destination / 'symbols')
                              and (path.name == 'libnode.so' or path.name == 'NodeMobile')}
+    lock['symbols_sha256'] = {path.relative_to(destination).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                             for path in (destination / 'symbols').rglob('*') if path.is_file()}
     (destination / 'build-info.json').write_text(json.dumps(lock, indent=2) + '\n')
 
 
@@ -176,7 +203,11 @@ def build_android(args):
     if (variables['OS'], variables['target_arch'], variables['node_shared']) != ('android', args.arch, 'true'):
         raise RuntimeError('The Android build configuration does not match the requested target.')
     (output / 'bin' / abi).mkdir(parents=True)
-    shutil.copyfile(library, output / 'bin' / abi / 'libnode.so')
+    packaged = output / 'bin' / abi / 'libnode.so'
+    shutil.copyfile(library, packaged)
+    strip_android(packaged, output / 'symbols' / abi / 'libnode.so.debug', toolchain)
+    verify_elf(packaged, args.arch)
+    verify_exports([toolchain / 'bin/llvm-readelf', '--dyn-syms', '--wide', packaged])
     copy_headers(source, output)
     record(output, source, abi)
 
@@ -240,6 +271,7 @@ def build_ios(args):
          '-install_name', '@rpath/NodeMobile.framework/NodeMobile',
          '-current_version', '1', '-compatibility_version', '1',
          '-o', framework / 'NodeMobile'])
+    strip_ios(framework / 'NodeMobile', output / 'symbols' / args.target / 'NodeMobile.framework.dSYM')
     verify_exports(['xcrun', 'nm', '-gU', framework / 'NodeMobile'], '_')
     exports = subprocess.check_output(['xcrun', 'nm', '-gU', framework / 'NodeMobile'], text=True)
     if '_node_start' not in exports.split():
@@ -286,6 +318,10 @@ def combine(args):
         for relative, expected_hash in record_data['binary_sha256'].items():
             if hashlib.sha256((inputs[name] / relative).read_bytes()).hexdigest() != expected_hash:
                 raise RuntimeError(f'Modified binary: {name}/{relative}')
+        symbols = {path.relative_to(inputs[name]).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                   for path in (inputs[name] / 'symbols').rglob('*') if path.is_file()}
+        if symbols != record_data.get('symbols_sha256', {}):
+            raise RuntimeError(f'Missing or modified debugging symbols: {name}')
         headers = {path.relative_to(inputs[name] / 'include').as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
                    for path in (inputs[name] / 'include').rglob('*')
                    if path.is_file() and path.name != 'config.gypi'}
@@ -321,6 +357,9 @@ def combine(args):
              '-output', output / 'NodeMobile.xcframework'])
         shutil.rmtree(output / 'simulator')
         header_source = inputs['arm64']
+    for path in inputs.values():
+        if (path / 'symbols').is_dir():
+            shutil.copytree(path / 'symbols', output / 'symbols', dirs_exist_ok=True)
     shutil.copytree(header_source / 'include', output / 'include')
     shutil.copyfile(header_source / 'LICENSE', output / 'LICENSE')
     shutil.copyfile(header_source / 'LICENSE-nodejs-mobile', output / 'LICENSE-nodejs-mobile')
