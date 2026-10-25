@@ -1,6 +1,6 @@
 # Node.js for Mobile Apps
 
-This is a *fork* of the [main repository](https://github.com/RockinChaos/nodejs-mobile) for *Node.js for Mobile Apps*, a toolkit for integrating Node.js into mobile applications.
+This is a *fork* of the [main repository](https://github.com/nodejs-mobile/nodejs-mobile) for *Node.js for Mobile Apps*, a toolkit for integrating Node.js into mobile applications.
 
 ## Resources for Newcomers
 
@@ -28,7 +28,7 @@ The combined Android package contains `bin/<ABI>/libnode.so`; the iOS package co
 
 ## Documentation
 
-The [build](BUILDING.md), [testing](TESTING.md) and [contribution](CONTRIBUTING.md) guides cover this fork's current workflows. The [release](RELEASING.md) guide describes the earlier source layout.
+The [build](BUILDING.md), [testing](TESTING.md), [contribution](CONTRIBUTING.md) and [release](RELEASING.md) guides cover this fork's workflows.
 
 Original project documentation and sample code are available on the [old project website](https://code.janeasystems.com/nodejs-mobile) and in the [samples repository](https://github.com/janeasystems/nodejs-mobile-samples/).
 
@@ -71,7 +71,7 @@ python3 scripts/build.py ios \
 
 Android architectures are `arm`, `arm64` and `x64`. iOS targets are `arm64`, `arm64-simulator` and `x64-simulator`; the x64 simulator slice requires an Intel Mac. Each invocation needs fresh `--source` and `--output` directories. The build reconstructs and verifies a separate source tree, leaving the submodule pristine.
 
-See [Build Android](BUILDING.md#build-android) and [Build iOS](BUILDING.md#build-ios) for all targets and package assembly. The [Build workflow](https://github.com/RockinChaos/nodejs-mobile/actions/workflows/build-mobile.yml) verifies source reconstruction, builds the platform matrix, and uploads the combined packages named above. It does not publish releases.
+See [Build Android](BUILDING.md#build-android) and [Build iOS](BUILDING.md#build-ios) for all targets and package assembly. The [Build workflow](https://github.com/RockinChaos/nodejs-mobile/actions/workflows/build-mobile.yml) verifies source reconstruction, builds the platform matrix, and uploads the combined packages and a standalone `versions.txt`.
 
 ## Running tests
 

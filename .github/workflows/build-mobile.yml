@@ -3,9 +3,9 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/build-mobile.yml', '.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
+    paths: ['.github/workflows/build-mobile.yml', '.github/cliff.toml', '.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
   pull_request:
-    paths: ['.github/workflows/build-mobile.yml', '.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
+    paths: ['.github/workflows/build-mobile.yml', '.github/cliff.toml', '.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
 
 permissions:
   contents: read
@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       build: ${{ steps.release.outputs.build }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
     steps:
       - uses: actions/checkout@v7
       - name: Check for an existing release
@@ -42,7 +44,9 @@ jobs:
           revision = re.search(r'^#define NODE_MOBILE_REVISION (\d+)$', header, re.M)
           if not revision:
               raise RuntimeError('Cannot determine NODE_MOBILE_REVISION')
-          tag = f'v{version}-{revision[1]}'
+          if int(revision[1]):
+              version += f'-{int(revision[1])}'
+          tag = f'v{version}'
           url = f'{os.environ["GITHUB_API_URL"]}/repos/{os.environ["GITHUB_REPOSITORY"]}/releases/tags/{tag}'
           request = Request(url, headers={
               'Accept': 'application/vnd.github+json',
@@ -50,15 +54,16 @@ jobs:
               'User-Agent': 'nodejs-mobile-build',
           })
           try:
-              with urlopen(request, timeout=30):
-                  build = False
+              with urlopen(request, timeout=30) as response:
+                  build = json.load(response)['draft']
           except HTTPError as error:
               if error.code != 404:
                   raise
               build = True
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f'build={str(build).lower()}\n')
-          print(f'{tag}: ' + ('no release found; building.' if build else 'release already exists; skipping build.'))
+              output.write(f'tag={tag}\nversion={version}\n')
+          print(f'{tag}: ' + ('missing or draft release; building.' if build else 'release already published; skipping build.'))
           PY
 
   verify-source:
@@ -154,6 +159,9 @@ jobs:
   combine-android:
     needs: build-android
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: write
     outputs:
       versions: ${{ steps.versions.outputs.versions }}
     steps:
@@ -173,15 +181,36 @@ jobs:
           print('versions=' + json.dumps({item['target']: item['versions'] for item in metadata['slices']}))
           PY
       - uses: actions/upload-artifact@v7
+        id: combined
         with:
           name: nodejs-mobile-android
           path: .build/nodejs-mobile-android
           if-no-files-found: error
           overwrite: true
+      - name: Remove Android build slices
+        if: >-
+          steps.combined.outputs.artifact-id != '' &&
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        continue-on-error: true
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const names = new Set(['android-arm', 'android-arm64', 'android-x64']);
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              ...context.repo, run_id: context.runId,
+            });
+            for (const artifact of artifacts) {
+              if (names.has(artifact.name)) {
+                await github.rest.actions.deleteArtifact({...context.repo, artifact_id: artifact.id});
+              }
+            }
 
   combine-ios:
     needs: build-ios
     runs-on: macos-15
+    permissions:
+      contents: read
+      actions: write
     outputs:
       versions: ${{ steps.versions.outputs.versions }}
     env:
@@ -203,11 +232,29 @@ jobs:
           print('versions=' + json.dumps({item['target']: item['versions'] for item in metadata['slices']}))
           PY
       - uses: actions/upload-artifact@v7
+        id: combined
         with:
           name: nodejs-mobile-ios
           path: .build/nodejs-mobile-ios
           if-no-files-found: error
           overwrite: true
+      - name: Remove iOS build slices
+        if: >-
+          steps.combined.outputs.artifact-id != '' &&
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        continue-on-error: true
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const names = new Set(['ios-arm64', 'ios-arm64-simulator', 'ios-x64-simulator']);
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              ...context.repo, run_id: context.runId,
+            });
+            for (const artifact of artifacts) {
+              if (names.has(artifact.name)) {
+                await github.rest.actions.deleteArtifact({...context.repo, artifact_id: artifact.id});
+              }
+            }
 
   versions:
     needs: [combine-android, combine-ios]
@@ -222,11 +269,13 @@ jobs:
           import json
           import os
           from pathlib import Path
-          versions = {
-              'description': 'Build-time dependency versions from patched sources and target configuration.',
-              'android': json.loads(os.environ['ANDROID_VERSIONS']),
-              'ios': json.loads(os.environ['IOS_VERSIONS']),
-          }
+          targets = [
+              *json.loads(os.environ['ANDROID_VERSIONS']).values(),
+              *json.loads(os.environ['IOS_VERSIONS']).values(),
+          ]
+          versions = {'node': targets[0]['node'], **targets[0]}
+          if any(target != versions for target in targets):
+              raise RuntimeError('Dependency versions differ between build targets.')
           Path('versions.txt').write_text(json.dumps(versions, indent=2) + '\n', encoding='utf-8')
           PY
       - uses: actions/upload-artifact@v7
@@ -236,3 +285,118 @@ jobs:
           archive: false
           if-no-files-found: error
           overwrite: true
+
+  draft-release:
+    needs: [check-release, versions]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    concurrency:
+      group: release-${{ needs.check-release.outputs.tag }}
+      cancel-in-progress: false
+    env:
+      RELEASE_TAG: ${{ needs.check-release.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.check-release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Select changelog range
+        id: changes
+        run: |
+          mkdir -p .build/release
+          previous=$(git describe --tags --abbrev=0 --first-parent --match 'v[0-9]*' --exclude "$RELEASE_TAG" "$GITHUB_SHA" 2>/dev/null || true)
+          if [[ -n "$previous" && ! "$previous" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?$ ]]; then
+            echo "Unexpected release tag: $previous" >&2
+            exit 1
+          fi
+          echo "range=${previous:+$previous..}$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - name: Generate changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: .github/cliff.toml
+          args: --strip all --tag '${{ env.RELEASE_TAG }}' '${{ steps.changes.outputs.range }}'
+        env:
+          OUTPUT: .build/release/changes.md
+      - name: Download Android release package
+        uses: actions/download-artifact@v8
+        with:
+          name: nodejs-mobile-android
+          path: .build/release-downloads/android
+          skip-decompress: true
+      - name: Download iOS release package
+        uses: actions/download-artifact@v8
+        with:
+          name: nodejs-mobile-ios
+          path: .build/release-downloads/ios
+          skip-decompress: true
+      - name: Download dependency versions
+        uses: actions/download-artifact@v8
+        with:
+          name: versions.txt
+          path: .build/release
+      - name: Prepare release assets and notes
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import shutil
+          import zipfile
+
+          release = Path('.build/release')
+          for platform in ('android', 'ios'):
+              packages = list(Path(f'.build/release-downloads/{platform}').iterdir())
+              if len(packages) != 1 or not zipfile.is_zipfile(packages[0]):
+                  raise RuntimeError(f'Expected one combined {platform} ZIP.')
+              with zipfile.ZipFile(packages[0]) as archive:
+                  if archive.testzip() is not None:
+                      raise RuntimeError(f'Corrupt {platform} ZIP.')
+              shutil.copyfile(packages[0], release / f'nodejs-mobile-{os.environ["RELEASE_TAG"]}-{platform}.zip')
+          changes = (release / 'changes.md').read_text().strip() or 'No additional project changes.'
+          versions = (release / 'versions.txt').read_text().strip()
+          introduction = '''This release contains the builds for:
+
+          * Android
+            * armeabi-v7a
+            * arm64-v8a
+            * x86_64
+          * iOS
+            * iPhone arm64
+            * Simulator arm64
+            * Simulator x86_64
+
+          The packages also include the node header files from this repo.'''
+          (release / 'notes.md').write_text(
+              introduction + '\n\n' + changes + '\n\nVersions:\n```json\n' + versions + '\n```\n', encoding='utf-8')
+          PY
+      - name: Recheck release status
+        id: release
+        uses: actions/github-script@v8
+        with:
+          script: |
+            try {
+              const {data} = await github.rest.repos.getReleaseByTag({...context.repo, tag: process.env.RELEASE_TAG});
+              core.setOutput('build', data.draft);
+              if (!data.draft) core.info('Release was published during this build; skipping draft update.');
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              core.setOutput('build', true);
+            }
+      - name: Create or update draft release
+        if: steps.release.outputs.build == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_VERSION }}
+          target_commitish: ${{ github.sha }}
+          draft: true
+          prerelease: false
+          body_path: .build/release/notes.md
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: |
+            .build/release/nodejs-mobile-${{ env.RELEASE_TAG }}-android.zip
+            .build/release/nodejs-mobile-${{ env.RELEASE_TAG }}-ios.zip
+            .build/release/versions.txt

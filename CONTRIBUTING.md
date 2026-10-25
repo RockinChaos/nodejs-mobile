@@ -74,7 +74,7 @@ Use `--update-lock` only for an intentional source change. A normal reconstructi
 5. Reconstruct with `--update-lock` to record the reviewed tree, then verify and reconstruct again without that flag, as shown above. Use a fresh output path for each attempt.
 6. Build and test Android and iOS using [BUILDING.md](BUILDING.md) and [TESTING.md](TESTING.md). Review the submodule pointer, manifest, patches, mobile version information and affected documentation together.
 
-The submodule branch configured in `.gitmodules` is an update convenience. Builds always use the exact recorded commit. Upstream updates are explicit source changes; the build workflow does not advance the pin or publish releases automatically.
+The submodule branch configured in `.gitmodules` is an update convenience. Builds always use the exact recorded commit. Upstream updates are explicit source changes; the build workflow does not advance the pin.
 
 ## Pull requests and verification
 
