@@ -31,7 +31,7 @@ index ac6a34553d1dc70fab48f707b9b81fb2249dab49..a228e6e5cf364216b819cd4dfe7c0874
      'configurations': {
        'Debug': {
 diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
-index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..a8e9885b118f777453cc65002e84978d5cfd30f6 100644
+index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..8c893c47318f494cf30aa808b632e29a9788f74d 100644
 --- a/tools/v8_gypfiles/v8.gyp
 +++ b/tools/v8_gypfiles/v8.gyp
 @@ -1198,7 +1198,7 @@
@@ -87,7 +87,15 @@ index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..a8e9885b118f777453cc65002e84978d
                ],
              }, {
                'sources': [
-@@ -2025,12 +2038,14 @@
+@@ -1531,6 +1544,7 @@
+           'sources': [
+             '<(V8_ROOT)/src/base/debug/stack_trace_posix.cc',
+             '<(V8_ROOT)/src/base/platform/platform-darwin.cc',
++            '<(V8_ROOT)/src/base/platform/platform-ios.cc',
+           ]
+         }],
+         ['is_win', {
+@@ -2025,12 +2039,14 @@
              ],
            }, { # 'OS!="win"'
              'conditions': [
@@ -104,7 +112,7 @@ index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..a8e9885b118f777453cc65002e84978d
                  'sources': [
                    '<(V8_ROOT)/src/heap/base/asm/ia32/push_registers_asm.cc',
                  ],
-@@ -2261,6 +2276,46 @@
+@@ -2261,6 +2277,46 @@
        },
      },  # postmortem-metadata
  
@@ -151,7 +159,7 @@ index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..a8e9885b118f777453cc65002e84978d
      {
        'target_name': 'v8_zlib',
        'type': 'static_library',
-@@ -2275,6 +2330,10 @@
+@@ -2275,6 +2331,10 @@
              }]
            ]
          }],

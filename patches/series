@@ -13,3 +13,4 @@
 0013-android-logcat.patch
 0014-worker-environment.patch
 0015-libcxx-char-traits.patch
+0016-abseil-build-sources.patch
