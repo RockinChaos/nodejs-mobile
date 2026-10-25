@@ -12,3 +12,4 @@
 0012-mobile-version.patch
 0013-android-logcat.patch
 0014-worker-environment.patch
+0015-libcxx-char-traits.patch

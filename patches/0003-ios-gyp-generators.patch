@@ -184,7 +184,7 @@ index 16b6f4e80b119a0eca37db086c2245980a7c357a..41c34c3c28ba8b22ffc893b15f57aef4
  
          writer = MakefileWriter(generator_flags, flavor)
 diff --git a/tools/gyp/pylib/gyp/generator/ninja.py b/tools/gyp/pylib/gyp/generator/ninja.py
-index 4eac6cdb2707d7f184ca998f68725ca0fecef14b..b7698f57b829eb081f47cab7e3f29378d512bcae 100644
+index 4eac6cdb2707d7f184ca998f68725ca0fecef14b..fefdd7c12d18a4a8391aa8b6189cf4f7b862f0b5 100644
 --- a/tools/gyp/pylib/gyp/generator/ninja.py
 +++ b/tools/gyp/pylib/gyp/generator/ninja.py
 @@ -42,7 +42,8 @@ generator_default_variables = {
@@ -416,6 +416,15 @@ index 4eac6cdb2707d7f184ca998f68725ca0fecef14b..b7698f57b829eb081f47cab7e3f29378
              # Mac does not use readelf/nm for .TOC generation, so avoiding polluting
              # the master ninja with extra unused variables.
              master_ninja.variable("nm", GetEnvironFallback(["NM_target", "NM"], nm))
+@@ -2512,7 +2539,7 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
+                 "solink": "$ld -shared $ldflags -o $lib -Wl,-soname=$soname %(suffix)s",
+                 "extract_toc": (
+                     "{ $readelf -d $lib | grep SONAME ; "
+-                    "$nm -gD -f p $lib | cut -f1-2 -d' '; }"
++                    "$nm -gD -f posix $lib | cut -f1-2 -d' '; }"
+                 ),
+             }
+         )
 @@ -2790,7 +2817,8 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
          )
  

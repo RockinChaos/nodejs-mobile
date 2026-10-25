@@ -132,14 +132,6 @@ Add `--unit-tests` to the verification command to run the upstream GYP unit test
 
 Add `--jobs N` to an Android or iOS build command to limit parallel compilation. The default is the host CPU count.
 
-To use an installed `sccache`, enable it before building:
-
-```sh
-export NODEJS_MOBILE_SCCACHE=1
-```
-
-When enabled, `sccache` must be on `PATH`. CI enables it for platform builds.
-
 ## GitHub Actions artifacts
 
 The [Build workflow](https://github.com/RockinChaos/nodejs-mobile/actions/workflows/build-mobile.yml) reconstructs and verifies the source, builds the platform matrix, then combines and uploads `nodejs-mobile-android` and `nodejs-mobile-ios` artifacts. Each package includes source metadata and the upstream license.

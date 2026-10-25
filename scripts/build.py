@@ -72,14 +72,9 @@ def compiler_environment():
     return env
 
 
-def enable_cache(env):
-    cache = None
-    if os.environ.get('NODEJS_MOBILE_SCCACHE') == '1':
-        cache = shutil.which('sccache')
-        if not cache:
-            raise RuntimeError('NODEJS_MOBILE_SCCACHE=1 requires sccache on PATH.')
+def set_compiler_commands(env):
     for name in ('CC', 'CXX', 'CC_host', 'CXX_host'):
-        env[name] = shlex.join(([cache] if cache else []) + [env[name]])
+        env[name] = shlex.quote(env[name])
     env['CC_target'] = env['CC']
     env['CXX_target'] = env['CXX']
 
@@ -161,7 +156,7 @@ def build_android(args):
         f'android_ndk_path={ndk}', f'android_ndk_sysroot={toolchain / "sysroot"}',
     ])
     env['LDFLAGS'] = '-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384 -Wl,--build-id=sha1'
-    enable_cache(env)
+    set_compiler_commands(env)
     for name in ('CC', 'CXX'):
         run([*shlex.split(env[name]), '--version'], env=env)
     source = prepare(args.source)
@@ -202,7 +197,7 @@ def build_ios(args):
     env['CC'] = env['CC_host']
     env['CXX'] = env['CXX_host']
     env['GYP_DEFINES'] = f'target_arch={arch} host_os=mac target_os=ios'
-    enable_cache(env)
+    set_compiler_commands(env)
     source = prepare(args.source)
     flags = ['--dest-os=ios', f'--dest-cpu={arch}', '--cross-compiling', '--enable-static', '--openssl-no-asm',
              '--with-intl=none', '--without-node-code-cache', '--without-node-snapshot',
@@ -238,7 +233,7 @@ def build_ios(args):
     (framework / 'Modules').mkdir()
     run(['xcrun', '--sdk', sdk, 'clang++', '-std=c++20', '-target', triple,
          '-isysroot', sdk_path, '-dynamiclib', '-Wl,-all_load', *archives,
-         '-Wl,-noall_load', source / 'tools/ios-framework/NodeMobile.cpp',
+         source / 'tools/ios-framework/NodeMobile.cpp',
          '-I', source / 'src', '-I', source / 'deps/v8/include',
          '-I', source / 'deps/uv/include', '-framework', 'Foundation',
          '-framework', 'CoreFoundation', '-framework', 'Security', '-lz',
