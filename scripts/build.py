@@ -162,6 +162,8 @@ def build_android(args):
     ])
     env['LDFLAGS'] = '-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384 -Wl,--build-id=sha1'
     enable_cache(env)
+    for name in ('CC', 'CXX'):
+        run([*shlex.split(env[name]), '--version'], env=env)
     source = prepare(args.source)
     run([sys.executable, source / 'configure.py', '--dest-os=android', f'--dest-cpu={args.arch}',
          '--cross-compiling', '--shared', '--openssl-no-asm', '--with-intl=none',

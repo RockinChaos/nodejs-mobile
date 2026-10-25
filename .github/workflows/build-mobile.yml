@@ -106,7 +106,7 @@ jobs:
         id: ndk
         with:
           ndk-version: ${{ env.ANDROID_NDK_VERSION }}
-          local-cache: true
+          local-cache: false
           add-to-path: false
       - name: Build library and validate addon exports
         run: >-
