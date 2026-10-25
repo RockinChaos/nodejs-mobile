@@ -1,0 +1,62 @@
+name: Build failure
+description: Report a source preparation, compilation or packaging failure.
+title: '[Build] '
+body:
+  - type: markdown
+    attributes:
+      value: Report build failures in RockinChaos/nodejs-mobile. Include the first error and the command that produced it.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Include the branch and commit, release tag or failing workflow run URL.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Target platform
+      options:
+        - Android
+        - iOS
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Build host
+      description: Include the host OS version and CPU architecture.
+      placeholder: Ubuntu 24.04 x86_64 or macOS 15 arm64
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Target architecture
+      description: Include whether the target is an iOS device or simulator.
+      placeholder: arm64, x64-simulator or all Android architectures
+    validations:
+      required: true
+  - type: textarea
+    id: toolchain
+    attributes:
+      label: Toolchain versions
+      description: Include Python, Clang and Ninja versions, plus Android NDK/API or Xcode/iOS SDK versions.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Build command
+      description: Include the full command and any custom build settings or source changes.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output
+      description: Include the first failing command and its error output, or link a complete build log.
+      render: text
+    validations:
+      required: true

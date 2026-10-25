@@ -1,0 +1,47 @@
+Source: nodejs-mobile/nodejs-mobile@b462916d69de0ac20c369ec569d1982ca212159f
+
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index da28cfdec336039f5d120209dff3a36f3278f885..8d616c611636259da4b7a94f7501f9e7caf48ce5 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -312,6 +312,8 @@ bool isSelfIssued(X509* cert) {
+ #ifdef __APPLE__
+ TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
+                                               bool is_self_issued) {
++  // nodejs-mobile patch: the APIs used here are macOS-only
++#if TARGET_OS_OSX
+   // Trust settings may be scoped to a single application
+   // skip as this is not supported
+   if (CFDictionaryContainsKey(trust_dict, kSecTrustSettingsApplication)) {
+@@ -389,6 +391,7 @@ TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
+                ? TrustStatus::TRUSTED
+                : TrustStatus::UNSPECIFIED;
+   }
++#endif  // TARGET_OS_OSX
+ 
+   return TrustStatus::UNSPECIFIED;
+ }
+@@ -451,6 +454,8 @@ bool IsCertificateTrustedForPolicy(X509* cert, SecCertificateRef ref) {
+   bool trust_evaluated = false;
+   bool is_self_issued = isSelfIssued(cert);
+ 
++  // nodejs-mobile patch: the APIs used here are macOS-only
++#if TARGET_OS_OSX
+   // Evaluate user trust domain, then admin. User settings can override
+   // admin (and both override the system domain, but we don't check that).
+   for (const auto& trust_domain :
+@@ -489,6 +494,14 @@ bool IsCertificateTrustedForPolicy(X509* cert, SecCertificateRef ref) {
+       CFRelease(trust_settings);
+     }
+   }
++#else
++  if (!trust_evaluated) {
++    bool result = IsCertificateTrustValid(ref);
++    if (result) {
++      return true;
++    }
++  }
++#endif
+   return false;
+ }
+ 

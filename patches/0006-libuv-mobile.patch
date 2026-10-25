@@ -1,0 +1,59 @@
+Source: nodejs-mobile/nodejs-mobile@38bcb111d024fd1feaa059947d074e6848415c7e
+Source: nodejs-mobile/nodejs-mobile@88c3d79d7915aad1020f693241a1ba403b6b2ff8
+
+diff --git a/deps/uv/src/unix/darwin.c b/deps/uv/src/unix/darwin.c
+index 009efbefaa70ee1e552cf6177893bd412201e276..49ff787022c9f2a8dcf44991474bccaad6d21ae8 100644
+--- a/deps/uv/src/unix/darwin.c
++++ b/deps/uv/src/unix/darwin.c
+@@ -20,6 +20,7 @@
+ 
+ #include "uv.h"
+ #include "internal.h"
++#include <TargetConditionals.h>
+ 
+ #include <assert.h>
+ #include <stdint.h>
+@@ -198,12 +199,14 @@ int uv_cpu_info(uv_cpu_info_t** cpu_infos, int* count) {
+   }
+ 
+   cpuspeed = 0;
++#if !TARGET_OS_IPHONE
+   size = sizeof(cpuspeed);
+   sysctlbyname("hw.cpufrequency", &cpuspeed, &size, NULL, 0);
+   if (cpuspeed == 0)
+     /* If sysctl hw.cputype == CPU_TYPE_ARM64, the correct value is unavailable
+      * from Apple, but we can hard-code it here to a plausible value. */
+     cpuspeed = 2400000000U;
++#endif
+ 
+   if (host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &numcpus,
+                           (processor_info_array_t*)&info,
+diff --git a/deps/uv/uv.gyp b/deps/uv/uv.gyp
+index 540445f1f3249b86c6ea15e3111644da206d2e33..46ee23c98d7f36ff54f200ebabb27421ddd5d8d2 100644
+--- a/deps/uv/uv.gyp
++++ b/deps/uv/uv.gyp
+@@ -292,8 +292,22 @@
+           'defines': [
+             '_GNU_SOURCE',
+           ],
+-          'sources': [
+-            '<@(uv_sources_android)',
++          'target_conditions': [
++            ['_toolset=="target"', {
++              'sources': [
++                '<@(uv_sources_android)',
++              ],
++            }],
++            ['_toolset=="host" and host_os=="mac"', {
++              'sources': [
++                '<@(uv_sources_apple)',
++              ],
++            }],
++            ['_toolset=="host" and host_os=="linux"', {
++              'sources': [
++                '<@(uv_sources_linux)',
++              ],
++            }],
+           ],
+           'link_settings': {
+             'libraries': [ '-ldl' ],

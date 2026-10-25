@@ -1,0 +1,14 @@
+0001-ios-configure.patch
+0002-mobile-build-settings.patch
+0003-ios-gyp-generators.patch
+0004-v8-cross-compilation.patch
+0005-v8-trap-handler.patch
+0006-libuv-mobile.patch
+0007-mobile-openssl-zlib.patch
+0008-ios-cares.patch
+0009-android-credentials.patch
+0010-ios-stdio.patch
+0011-ios-system-trust.patch
+0012-mobile-version.patch
+0013-android-logcat.patch
+0014-worker-environment.patch

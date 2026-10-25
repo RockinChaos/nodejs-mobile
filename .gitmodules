@@ -1,0 +1,4 @@
+[submodule "node"]
+	path = node
+	url = https://github.com/nodejs/node.git
+	branch = v22.x

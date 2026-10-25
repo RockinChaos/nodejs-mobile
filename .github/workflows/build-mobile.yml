@@ -1,215 +1,250 @@
 name: Build
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
+    paths: ['.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
   pull_request:
-    branches: [main]
-
-env:
-  SCCACHE_GHA_ENABLED: 'true'
-  ANDROID_NDK_VERSION: r24
-  ANDROID_TARGET_SDK_VERSION: 24
+    paths: ['.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
 
 permissions:
   contents: read
 
+concurrency:
+  group: mobile-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SCCACHE_GHA_ENABLED: 'true'
+  NODEJS_MOBILE_SCCACHE: '1'
+  ANDROID_NDK_VERSION: r27d
+
 jobs:
+  check-release:
+    runs-on: ubuntu-24.04
+    outputs:
+      build: ${{ steps.release.outputs.build }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check for an existing release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+          from urllib.error import HTTPError
+          from urllib.request import Request, urlopen
+
+          version = json.loads(Path('node-source.json').read_text())['version']
+          header = Path('src/node_mobile_version.h').read_text()
+          revision = re.search(r'^#define NODE_MOBILE_REVISION (\d+)$', header, re.M)
+          if not revision:
+              raise RuntimeError('Cannot determine NODE_MOBILE_REVISION')
+          tag = f'v{version}-{revision[1]}'
+          url = f'{os.environ["GITHUB_API_URL"]}/repos/{os.environ["GITHUB_REPOSITORY"]}/releases/tags/{tag}'
+          request = Request(url, headers={
+              'Accept': 'application/vnd.github+json',
+              'Authorization': f'Bearer {os.environ["GITHUB_TOKEN"]}',
+              'User-Agent': 'nodejs-mobile-build',
+          })
+          try:
+              with urlopen(request, timeout=30):
+                  build = False
+          except HTTPError as error:
+              if error.code != 404:
+                  raise
+              build = True
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'build={str(build).lower()}\n')
+          print(f'{tag}: ' + ('no release found; building.' if build else 'release already exists; skipping build.'))
+          PY
+
+  verify-source:
+    needs: check-release
+    if: needs.check-release.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Reconstruct and verify patches
+        run: |
+          python scripts/prepare.py
+          python scripts/verify.py --unit-tests
+
   build-android:
+    needs: verify-source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - { os: ubuntu-22.04, target_arch: arm }
-          - { os: ubuntu-22.04, target_arch: arm64 }
-          - { os: ubuntu-22.04, target_arch: x86_64 }
-
-    runs-on: ${{ matrix.config.os }}
+        arch: [arm, arm64, x64]
     env:
-      TARGET_ARCH: ${{ matrix.config.target_arch }}
-
+      SCCACHE_GHA_VERSION: node22-android-${{ matrix.arch }}-r27d
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
-          fetch-depth: '0'
-
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.6
-
-      - name: Install build utils
+          submodules: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install 32-bit host support
+        if: matrix.arch == 'arm'
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-multilib g++-multilib
-
-      - name: Setup Android NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
+      - uses: mozilla-actions/sccache-action@v0.0.11
+      - uses: nttld/setup-ndk@v1
+        id: ndk
         with:
           ndk-version: ${{ env.ANDROID_NDK_VERSION }}
+          local-cache: true
           add-to-path: false
-
-      - name: Build
-        env:
-          MY_ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-          LDFLAGS: '-Wl,-z,max-page-size=16384'
-        run: |
-          ./tools/android_build.sh $MY_ANDROID_NDK_HOME $ANDROID_TARGET_SDK_VERSION $TARGET_ARCH
-          rm -rf ./out_android/libnode
-
-      - uses: actions/upload-artifact@v4
+      - name: Build library and validate addon exports
+        run: >-
+          python scripts/build.py android
+          --ndk '${{ steps.ndk.outputs.ndk-path }}'
+          --arch '${{ matrix.arch }}'
+          --output '.build/artifacts/android-${{ matrix.arch }}'
+      - name: Compiler cache statistics
+        if: always()
+        run: sccache --show-stats
+      - uses: actions/upload-artifact@v7
         with:
-          name: node-android-${{ env.TARGET_ARCH }}
-          path: out_android
+          name: android-${{ matrix.arch }}
+          path: .build/artifacts/android-${{ matrix.arch }}
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
 
   build-ios:
+    needs: verify-source
+    timeout-minutes: 240
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - { os: macos-13, target_arch: arm64, xcode: 15.2 }
-          - { os: macos-14, target_arch: arm64-simulator, xcode: 15.4 }
-          - { os: macos-13, target_arch: x64-simulator, xcode: 15.2 }
-
-    runs-on: ${{ matrix.config.os }}
+        include:
+          - {target: arm64, runner: macos-15}
+          - {target: arm64-simulator, runner: macos-15}
+          - {target: x64-simulator, runner: macos-15-intel}
+    runs-on: ${{ matrix.runner }}
     env:
-      TARGET_ARCH: ${{ matrix.config.target_arch }}
-      XCODE_VERSION: ${{ matrix.config.xcode }}
-
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+      SCCACHE_GHA_VERSION: node22-ios-${{ matrix.target }}-xcode16.4
     steps:
-      - name: Free Disk Space
-        run: |
-          sudo rm -rf /Library/Frameworks/Mono.framework
-          sudo rm -rf /Library/Frameworks/Xamarin.iOS.framework
-          sudo rm -rf /Library/Frameworks/Xamarin.Android.framework
-          sudo rm -rf /Users/runner/Library/Android
-          sudo rm -rf /usr/local/share/powershell
-          sudo find /Applications -type d -name "Xcode_*.app" ! -name "Xcode_$XCODE_VERSION.app" -prune -exec rm -rf "{}" \;
-
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
-          fetch-depth: '0'
-
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.6
-
-      - name: Xcode Select Version
-        uses: mobiledevops/xcode-select-version-action@v1
+          submodules: true
+      - uses: actions/setup-python@v7
         with:
-          xcode-select-version: ${{ matrix.config.xcode }}
-
-      # Python 3.12 (chosen by configure.py) doesn't have support for distutils
-      # https://github.com/nodejs/node-gyp/issues/2869 workaround
-      - name: Build
-        run: |
-          python3.12 -m venv .
-          source bin/activate
-          python3.12 -m pip install setuptools
-          ./tools/ios_framework_prepare.sh $TARGET_ARCH
-
-      - uses: actions/upload-artifact@v4
+          python-version: '3.13'
+      - uses: mozilla-actions/sccache-action@v0.0.11
+      - name: Build framework and validate addon exports
+        run: >-
+          python scripts/build.py ios
+          --target '${{ matrix.target }}'
+          --output '.build/artifacts/ios-${{ matrix.target }}'
+      - name: Compiler cache statistics
+        if: always()
+        run: sccache --show-stats
+      - uses: actions/upload-artifact@v7
         with:
-          name: node-ios-${{ env.TARGET_ARCH }}
-          path: out_ios_${{ env.TARGET_ARCH }}
+          name: ios-${{ matrix.target }}
+          path: .build/artifacts/ios-${{ matrix.target }}
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
 
   combine-android:
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - { os: ubuntu-22.04 }
-    runs-on: ${{ matrix.config.os }}
     needs: build-android
+    runs-on: ubuntu-24.04
+    outputs:
+      versions: ${{ steps.versions.outputs.versions }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
-          fetch-depth: '0'
-
-      - name: Install build utils
+          pattern: android-*
+          path: .build/inputs
+      - run: python3 scripts/build.py combine-android --inputs .build/inputs --output .build/nodejs-mobile-android
+      - name: Export dependency versions
+        id: versions
         run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-multilib g++-multilib
-
-      - name: Setup Android NDK
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: ${{ env.ANDROID_NDK_VERSION }}
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: node-android-*
-          merge-multiple: true
-          path: out_android
-
-      - run: rm -rf out_android/libnode
-
-      - name: Generate config.gypi
-        run: ./configure
-
-      - name: Combine
-        run: |
-          mkdir -p artifacts/bin
-          mkdir -p artifacts/include
-          cp -R out_android/* artifacts/bin
-          ./tools/copy_libnode_headers.sh android
-          cp -R out_android/libnode/include/* artifacts/include
-
-      - uses: actions/upload-artifact@v4
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          metadata = json.loads(Path('.build/nodejs-mobile-android/build-info.json').read_text())
+          print('versions=' + json.dumps({item['target']: item['versions'] for item in metadata['slices']}))
+          PY
+      - uses: actions/upload-artifact@v7
         with:
           name: nodejs-mobile-android
-          path: artifacts
-
-      - uses: geekyeggo/delete-artifact@v5
-        with:
-          name: node-android-*
+          path: .build/nodejs-mobile-android
+          if-no-files-found: error
+          overwrite: true
 
   combine-ios:
-    strategy:
-      matrix:
-        config:
-          - { os: macos-14, xcode: 15.4 }
-    runs-on: ${{ matrix.config.os }}
     needs: build-ios
+    runs-on: macos-15
+    outputs:
+      versions: ${{ steps.versions.outputs.versions }}
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
-          fetch-depth: '0'
-
-      - name: Xcode Select Version
-        uses: mobiledevops/xcode-select-version-action@v1
-        with:
-          xcode-select-version: ${{ matrix.config.xcode }}
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: node-ios-*
-          merge-multiple: true
-          path: out_ios
-
-      # Python 3.12 (chosen by configure.py) doesn't have support for distutils
-      # https://github.com/nodejs/node-gyp/issues/2869 workaround
-      - name: Generate config.gypi
+          pattern: ios-*
+          path: .build/inputs
+      - run: python3 scripts/build.py combine-ios --inputs .build/inputs --output .build/nodejs-mobile-ios
+      - name: Export dependency versions
+        id: versions
         run: |
-          python3.12 -m venv .
-          source bin/activate
-          python3.12 -m pip install setuptools
-          ./configure
-
-      - name: Combine
-        run: |
-          python3.12 -m venv .
-          source bin/activate
-          python3.12 -m pip install setuptools
-          ./tools/ios_framework_prepare.sh combine_frameworks
-          mkdir -p artifacts/include
-          cp -R out_ios/NodeMobile.xcframework artifacts/
-          ./tools/copy_libnode_headers.sh ios
-          cp -R out_ios/libnode/include/* artifacts/include
-
-      - uses: actions/upload-artifact@v4
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          metadata = json.loads(Path('.build/nodejs-mobile-ios/build-info.json').read_text())
+          print('versions=' + json.dumps({item['target']: item['versions'] for item in metadata['slices']}))
+          PY
+      - uses: actions/upload-artifact@v7
         with:
           name: nodejs-mobile-ios
-          path: artifacts
+          path: .build/nodejs-mobile-ios
+          if-no-files-found: error
+          overwrite: true
 
-      - uses: geekyeggo/delete-artifact@v5
+  versions:
+    needs: [combine-android, combine-ios]
+    runs-on: ubuntu-24.04
+    env:
+      ANDROID_VERSIONS: ${{ needs.combine-android.outputs.versions }}
+      IOS_VERSIONS: ${{ needs.combine-ios.outputs.versions }}
+    steps:
+      - name: Write dependency versions
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          versions = {
+              'description': 'Build-time dependency versions from patched sources and target configuration.',
+              'android': json.loads(os.environ['ANDROID_VERSIONS']),
+              'ios': json.loads(os.environ['IOS_VERSIONS']),
+          }
+          Path('versions.txt').write_text(json.dumps(versions, indent=2) + '\n', encoding='utf-8')
+          PY
+      - uses: actions/upload-artifact@v7
         with:
-          name: node-ios-*
+          name: versions.txt
+          path: versions.txt
+          archive: false
+          if-no-files-found: error
+          overwrite: true

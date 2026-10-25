@@ -10,12 +10,17 @@
 !.gitattributes
 !.github
 !.gitignore
+!.gitmodules
 !.gitkeep
 
 # === Rules for other build artifacts ===
+/build/
+/out/
+/node_modules/
 
 # === Rules for release artifacts ===
 /*.tar.*
+/*.zip
 
 # === Rules for Xcode artifacts ===
 *.xcodeproj

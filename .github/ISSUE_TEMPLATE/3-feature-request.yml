@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest a runtime, platform support or maintenance improvement.
+title: '[Feature] '
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Describe the problem this change would solve.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Affected area
+      options:
+        - Android
+        - iOS
+        - Both platforms
+        - Build and maintenance
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the behavior or capability you would like.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and additional context
+      description: Include workarounds, relevant upstream changes or examples if available.

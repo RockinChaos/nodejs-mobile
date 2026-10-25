@@ -1,0 +1,69 @@
+Source: nodejs-mobile/nodejs-mobile@38bcb111d024fd1feaa059947d074e6848415c7e
+
+diff --git a/src/node_metadata.cc b/src/node_metadata.cc
+index ba5fb1ae5c03c90b93412f1a5569eca823e34656..8d68eaed8f77bbb6a248e1e7b750009f0af02df6 100644
+--- a/src/node_metadata.cc
++++ b/src/node_metadata.cc
+@@ -48,6 +48,10 @@
+ #include <unicode/uversion.h>
+ #endif  // NODE_HAVE_I18N_SUPPORT
+ 
++#ifdef NODE_MOBILE
++#include "node_mobile_version.h"
++#endif  // NODE_MOBILE
++
+ namespace node {
+ 
+ namespace per_process {
+@@ -116,6 +120,9 @@ Metadata::Versions::Versions() {
+       NODE_STRINGIFY(LLHTTP_VERSION_MINOR)
+       "."
+       NODE_STRINGIFY(LLHTTP_VERSION_PATCH);
++#ifdef NODE_MOBILE
++  mobile = NODE_MOBILE_VERSION_STRING;
++#endif  // NODE_MOBILE
+ 
+   brotli =
+     std::to_string(BrotliEncoderVersion() >> 24) +
+diff --git a/src/node_metadata.h b/src/node_metadata.h
+index d9c533f100d25aeab1fe8589932a8ddead431258..6a7dec673e2beae6b625b5ebeb9369d281f6d210 100644
+--- a/src/node_metadata.h
++++ b/src/node_metadata.h
+@@ -79,6 +79,13 @@ namespace node {
+ #define NODE_VERSIONS_KEY_INTL(V)
+ #endif  // NODE_HAVE_I18N_SUPPORT
+ 
++#ifdef NODE_MOBILE
++#define NODE_VERSIONS_KEY_MOBILE(V)                                            \
++  V(mobile)
++#else
++#define NODE_VERSIONS_KEY_MOBILE(V)
++#endif  // NODE_MOBILE
++
+ #ifdef OPENSSL_INFO_QUIC
+ #define NODE_VERSIONS_KEY_QUIC(V)                                             \
+   V(ngtcp2)                                                                   \
+@@ -97,6 +104,7 @@ namespace node {
+   NODE_VERSIONS_KEYS_BASE(V)                                                   \
+   NODE_VERSIONS_KEY_CRYPTO(V)                                                  \
+   NODE_VERSIONS_KEY_INTL(V)                                                    \
++  NODE_VERSIONS_KEY_MOBILE(V)                                                  \
+   NODE_VERSIONS_KEY_QUIC(V)                                                    \
+   NODE_VERSIONS_KEY_SQLITE(V)
+ 
+diff --git a/test/parallel/test-process-versions.js b/test/parallel/test-process-versions.js
+index 82b08567993a4a7fd4ff468466ee7e46cdbe9900..9cfea376ac5df624011fa02b6598217fca87f7a6 100644
+--- a/test/parallel/test-process-versions.js
++++ b/test/parallel/test-process-versions.js
+@@ -26,6 +26,11 @@ const expected_keys = [
+   'nbytes',
+ ];
+ 
++if (process.platform === 'android' || process.platform === 'ios') {
++  expected_keys.push('mobile');
++  assert.ok(process.versions.mobile.startsWith(`${process.versions.node}-`));
++  assert.match(process.versions.mobile.slice(process.versions.node.length), /^-\d+$/);
++}
+ 
+ const hasUndici = process.config.variables.node_builtin_shareable_builtins.includes('deps/undici/undici.js');
+ const hasAmaro = process.config.variables.node_builtin_shareable_builtins.includes('deps/amaro/dist/index.js');

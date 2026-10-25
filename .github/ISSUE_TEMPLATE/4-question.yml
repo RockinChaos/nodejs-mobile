@@ -1,0 +1,29 @@
+name: Question or support
+description: Ask about building or embedding this fork of nodejs-mobile.
+title: '[Question] '
+body:
+  - type: markdown
+    attributes:
+      value: Check the README and FAQ first, then describe what you are trying to do with RockinChaos/nodejs-mobile.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Describe your goal and what you need help with.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Include the release tag, commit or artifact link if applicable.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include Android or iOS, OS version, architecture and any integration plugin and its version.
+  - type: textarea
+    id: attempts
+    attributes:
+      label: What have you tried?
+      description: Include commands, examples or relevant output if available.

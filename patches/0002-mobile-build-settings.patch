@@ -1,0 +1,309 @@
+Source: nodejs-mobile/nodejs-mobile@38bcb111d024fd1feaa059947d074e6848415c7e
+Source: nodejs-mobile/nodejs-mobile@69d280eac379dc8a3cd03d44c6afd10cd7c59409
+Source: nodejs-mobile/nodejs-mobile@abe5c73239dfa7af4b8a1204d28bb80e09c3f2be
+Source: nodejs-mobile/nodejs-mobile@7e9640139ac7e3eb92dd4cd60a731b428d531bd7
+Source: nodejs/node@1280f5a512d08fc0db9cbe3b3fd858aa89d9db5b
+Source: nodejs-mobile/nodejs-mobile@106c51f95d55d1010de56a2ffd09bfb4ba819a47
+Source: nodejs-mobile/nodejs-mobile@63187ca7190d41b5e4d786f536492aa5fe5ab280
+Source: nodejs-mobile/nodejs-mobile@1bf09c3b1222ac45cdcbe9cf463472695fbfac62
+Source: nodejs-mobile/nodejs-mobile@b2e077f808198c2d2bdaf0d5fccaeb49a9f574aa
+Source: nodejs-mobile/nodejs-mobile@255f34b13e03e36e91b8dbc879947db50d72027d
+Source: nodejs-mobile/nodejs-mobile@474a13a70da73d3e65bda17cd83cad7403e80ed4
+
+diff --git a/common.gypi b/common.gypi
+index 704eacfc186277767a258af351f2c911500c599f..506f094d924d8cce8e63deddddaa4ca1009321b4 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -38,7 +38,7 @@
+ 
+     # Reset this number to 0 on major V8 upgrades.
+     # Increment by one for each non-official patch applied to deps/v8.
+-    'v8_embedder_string': '-node.57',
++    'v8_embedder_string': '-node.57-mobile.0',
+ 
+     ##### V8 defaults for Node.js #####
+ 
+@@ -108,7 +108,7 @@
+         'obj_dir%': '<(PRODUCT_DIR)/obj.target',
+         'v8_base': '<(PRODUCT_DIR)/obj.target/tools/v8_gypfiles/libv8_snapshot.a',
+       }],
+-      ['OS=="mac"', {
++      ['OS=="mac" or OS == "ios"', {
+         'obj_dir%': '<(PRODUCT_DIR)/obj.target',
+         'v8_base': '<(PRODUCT_DIR)/libv8_snapshot.a',
+       }],
+@@ -227,7 +227,7 @@
+             # increase performance, number from experimentation
+             'cflags': [ '-qINLINE=::150:100000' ]
+           }],
+-          ['OS!="mac" and OS!="win" and OS!="zos"', {
++          ['OS!="mac" and OS!="ios" and OS!="win" and OS!="zos"', {
+             # -fno-omit-frame-pointer is necessary for the --perf_basic_prof
+             # flag to work correctly. perf(1) gets confused about JS stack
+             # frames otherwise, even with --call-graph dwarf.
+@@ -246,7 +246,7 @@
+             ],
+           },],
+           ['OS == "android"', {
+-            'cflags': [ '-fPIC', '-I<(android_ndk_path)/sources/android/cpufeatures' ],
++            'cflags': [ '-fPIC' ],
+             'ldflags': [ '-fPIC' ]
+           }],
+           ['clang==1', {
+@@ -375,6 +375,30 @@
+     'msvs_cygwin_shell': 0, # prevent actions from trying to use cygwin
+ 
+     'conditions': [
++      ['OS=="android" and configuring_node==0', {
++        'target_conditions': [
++          ['_toolset=="target" and _type=="loadable_module"', {
++            'ldflags': [
++              '-Wl,-z,max-page-size=16384',
++              '-Wl,-z,common-page-size=16384',
++            ],
++            'conditions': [
++              ['target_arch=="arm"', {
++                'libraries': ['<(node_root_dir)/bin/armeabi-v7a/libnode.so'],
++              }],
++              ['target_arch=="arm64"', {
++                'libraries': ['<(node_root_dir)/bin/arm64-v8a/libnode.so'],
++              }],
++              ['target_arch in ("x64", "x86_64")', {
++                'libraries': ['<(node_root_dir)/bin/x86_64/libnode.so'],
++              }],
++              ['target_arch in ("ia32", "x86")', {
++                'libraries': ['<(node_root_dir)/bin/x86/libnode.so'],
++              }],
++            ],
++          }],
++        ],
++      }],
+       [ 'configuring_node', {
+         'msvs_configuration_attributes': {
+           'OutputDirectory': '<(DEPTH)/out/$(Configuration)/',
+@@ -387,7 +411,7 @@
+       [ 'target_arch=="arm64"', {
+         'msvs_configuration_platform': 'arm64',
+       }],
+-      ['asan == 1 and OS != "mac" and OS != "zos"', {
++      ['asan == 1 and OS != "mac" and OS != "ios" and OS != "zos"', {
+         'cflags+': [
+           '-fno-omit-frame-pointer',
+           '-fsanitize=address',
+@@ -397,7 +421,7 @@
+         'cflags!': [ '-fomit-frame-pointer' ],
+         'ldflags': [ '-fsanitize=address' ],
+       }],
+-      ['asan == 1 and OS == "mac"', {
++      ['asan == 1 and (OS == "mac" or OS == "ios")', {
+         'xcode_settings': {
+           'OTHER_CFLAGS+': [
+             '-fno-omit-frame-pointer',
+@@ -415,7 +439,7 @@
+           }],
+         ],
+       }],
+-      ['ubsan == 1 and OS != "mac" and OS != "zos"', {
++      ['ubsan == 1 and OS != "mac" and OS != "ios" and OS != "zos"', {
+         'cflags+': [
+           '-fno-omit-frame-pointer',
+           '-fsanitize=undefined',
+@@ -424,7 +448,7 @@
+         'cflags!': [ '-fno-omit-frame-pointer' ],
+         'ldflags': [ '-fsanitize=undefined' ],
+       }],
+-      ['ubsan == 1 and OS == "mac"', {
++      ['ubsan == 1 and (OS == "mac" or OS == "ios")', {
+         'xcode_settings': {
+           'OTHER_CFLAGS+': [
+             '-fno-omit-frame-pointer',
+@@ -526,11 +550,13 @@
+           }],
+           ['_toolset=="host"', {
+             'conditions': [
+-              [ 'host_arch=="ia32"', {
++              # nodejs-mobile patch: https://github.com/nodejs/node/pull/57748
++              [ 'host_arch=="ia32" or (host_arch=="x64" and target_arch in ("ia32", "arm"))', {
+                 'cflags': [ '-m32' ],
+                 'ldflags': [ '-m32' ],
+               }],
+-              [ 'host_arch=="x64"', {
++              # nodejs-mobile patch: https://github.com/nodejs/node/pull/57748
++              [ 'host_arch=="x64" and (target_arch=="x64" or target_arch=="arm64")', {
+                 'cflags': [ '-m64' ],
+                 'ldflags': [ '-m64' ],
+               }],
+@@ -697,6 +723,96 @@
+           }],
+         ],
+       }],
++      ['OS=="ios"', {
++        'defines': ['_DARWIN_USE_64_BIT_INODE=1'],
++        'xcode_settings': {
++          'ALWAYS_SEARCH_USER_PATHS': 'NO',
++          'GCC_CW_ASM_SYNTAX': 'NO',                # No -fasm-blocks
++          'GCC_DYNAMIC_NO_PIC': 'NO',               # No -mdynamic-no-pic
++                                                    # (Equivalent to -fPIC)
++          'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',        # -fno-exceptions
++          'GCC_ENABLE_CPP_RTTI': 'NO',              # -fno-rtti
++          'GCC_ENABLE_PASCAL_STRINGS': 'NO',        # No -mpascal-strings
++          'GCC_STRICT_ALIASING': 'NO',              # -fno-strict-aliasing
++          'PREBINDING': 'NO',                       # No -Wl,-prebind
++          'USE_HEADERMAP': 'NO',
++        },
++        'target_conditions': [
++          ['_toolset=="host"', {
++            'xcode_settings': {
++              'SDKROOT': 'macosx',
++              'MACOSX_DEPLOYMENT_TARGET': '13.5',   # Use macOS deployment target for host tools
++              'WARNING_CFLAGS': [
++                '-Wall',
++                '-Wendif-labels',
++                '-W',
++                '-Wno-unused-parameter',
++              ],
++            },
++            'conditions': [
++              ['host_arch=="arm64"', {
++                'xcode_settings': {'ARCHS': ['arm64']},
++              }],
++              ['host_arch=="x64"', {
++                'xcode_settings': {'ARCHS': ['x86_64']},
++              }],
++            ],
++          }, {
++            'xcode_settings': {
++              'IPHONEOS_DEPLOYMENT_TARGET': '14.0', # -miphoneos-version-min=14.0
++              'WARNING_CFLAGS': [
++                '-Wall',
++                '-Wendif-labels',
++                '-W',
++                '-Wno-unused-parameter',
++                '-Wno-enum-constexpr-conversion',
++              ],
++            },
++            'conditions': [
++              ['iossim!="true" and target_arch in "arm64 arm armv7s"', {
++                'xcode_settings': {
++                  'SDKROOT': 'iphoneos',
++                }
++              }, {
++                'xcode_settings': {
++                  'SDKROOT': 'iphonesimulator',
++                }
++              }],
++            ],
++          }],
++          ['_type!="static_library"', {
++            'xcode_settings': {
++              'OTHER_LDFLAGS': [
++                '-Wl,-search_paths_first',
++              ],
++            },
++          }],
++        ],
++        'conditions': [
++          ['target_arch=="ia32"', {
++            'xcode_settings': {'ARCHS': ['i386']},
++          }],
++          ['target_arch=="x64"', {
++            'xcode_settings': {'ARCHS': ['x86_64']},
++          }],
++          [ 'target_arch=="arm64"', {
++            'xcode_settings': {'ARCHS': ['arm64']},
++          }],
++          [ 'target_arch=="arm"', {
++            'xcode_settings': {'ARCHS': ['armv7']},
++          }],
++          [ 'target_arch=="armv7s"', {
++            'xcode_settings': {'ARCHS': ['armv7s']},
++          }],
++          ['clang==1', {
++            'xcode_settings': {
++              'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',
++              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++20',  # -std=gnu++20
++              'CLANG_CXX_LIBRARY': 'libc++',
++            },
++          }],
++        ],
++      }],
+       ['OS=="freebsd"', {
+         'ldflags': [
+           '-Wl,--export-dynamic',
+diff --git a/node.gyp b/node.gyp
+index f9ee71dd9a395fa1de99a6f62ba60acdf8be12a1..ed3ac7ec94f1ee29e1ee0ddec6e2a3b4383a0f1b 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -901,7 +901,7 @@
+         [ 'node_builtin_modules_path!=""', {
+           'defines': [ 'NODE_BUILTIN_MODULES_PATH="<(node_builtin_modules_path)"' ]
+         }],
+-        [ 'node_shared=="true"', {
++        [ 'node_shared=="true" or (node_target_type=="static_library" and OS=="ios")', {
+           'sources': [
+             'src/node_snapshot_stub.cc',
+           ]
+@@ -1370,7 +1370,7 @@
+         [ 'node_shared_libuv=="false"', {
+           'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
+         }],
+-        [ 'OS in "linux mac openharmony"', {
++        [ 'OS in "linux mac ios openharmony"', {
+           'defines': ['NODE_JS2C_USE_STRING_LITERALS'],
+         }],
+         [ 'debug_node=="true"', {
+diff --git a/node.gypi b/node.gypi
+index bb002412b3952ad74ec4948690f7d77de6122120..1550211ce7a741499722a8eda541f4fd0ceb655e 100644
+--- a/node.gypi
++++ b/node.gypi
+@@ -260,6 +260,11 @@
+         'NODE_PLATFORM="darwin"',
+       ],
+     }],
++    # nodejs-mobile patch: link CoreFoundation and Security frameworks when compiling for iOS
++    [ 'OS=="ios"', {
++      # linking Corefoundation and Security is needed for crypto functionality
++      'libraries': [ '-framework CoreFoundation -framework Security' ],
++    }],
+     [ 'OS=="freebsd"', {
+       'libraries': [
+         '-lutil',
+@@ -338,7 +343,7 @@
+         ],
+       },
+     }],
+-    [ 'coverage=="true" and node_shared=="false" and OS in "mac freebsd linux openharmony"', {
++    [ 'coverage=="true" and node_shared=="false" and OS in "mac ios freebsd linux openharmony"', {
+       'cflags!': [ '-O3' ],
+       'ldflags': [ '--coverage',
+                    '-g',
+@@ -389,11 +394,15 @@
+           ],
+           'dependencies': [
+             './deps/openssl/openssl.gyp:openssl',
+-
+-            # For tests
+-            './deps/openssl/openssl.gyp:openssl-cli',
+           ],
+           'conditions': [
++            [ 'OS not in "ios android"', {
++              'dependencies': [
++                # Not needed for iOS and Android, doesn't build
++                # For tests
++                './deps/openssl/openssl.gyp:openssl-cli',
++              ],
++            }],
+             # -force_load or --whole-archive are not applicable for
+             # the static library
+             [ 'force_load=="true"', {
+@@ -444,5 +453,10 @@
+     }, {
+       'defines': [ 'HAVE_AMARO=0' ]
+     }],
++    [ 'OS=="android" or OS=="ios"', {
++      'defines': [
++        'NODE_MOBILE',
++      ],
++    }],
+   ],
+ }

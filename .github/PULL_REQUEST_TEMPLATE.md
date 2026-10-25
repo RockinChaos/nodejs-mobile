@@ -1,4 +1,6 @@
 <!--
+Before submitting a pull request, read CONTRIBUTING.md.
+For source changes, reconstruct and verify the patch series as described there.
 
 Developer's Certificate of Origin 1.1
 

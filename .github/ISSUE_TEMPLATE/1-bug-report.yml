@@ -1,0 +1,50 @@
+name: Runtime bug
+description: Report a crash or incorrect behavior on Android or iOS.
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: Report runtime problems in RockinChaos/nodejs-mobile. Use the build failure form for compilation or packaging errors.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Include the release tag, commit or artifact link, and process.versions.mobile if available.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Target platform
+      options:
+        - Android
+        - iOS
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the OS version, device or simulator, CPU architecture, and any integration plugin and its version.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+      description: Describe what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include a minimal example or a link to a reproduction project.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or crash report
+      description: Include relevant logcat output, an iOS crash report or a stack trace if available.
+      render: text

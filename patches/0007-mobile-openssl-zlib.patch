@@ -1,0 +1,64 @@
+Source: nodejs-mobile/nodejs-mobile@69d280eac379dc8a3cd03d44c6afd10cd7c59409
+Source: nodejs-mobile/nodejs-mobile@45cb0fb956c81cd7798323d0832871c14838bf42
+
+diff --git a/deps/openssl/openssl_no_asm.gypi b/deps/openssl/openssl_no_asm.gypi
+index 8169f605d7d7f10d850b7df86c5b60672eeffb5b..2c38a6c6896c7d573e1277a1c01bbcc207e11b80 100644
+--- a/deps/openssl/openssl_no_asm.gypi
++++ b/deps/openssl/openssl_no_asm.gypi
+@@ -13,9 +13,9 @@
+       'includes': ['config/archs/linux-aarch64/no-asm/openssl.gypi'],
+     }, 'target_arch=="ia32" and OS=="freebsd"', {
+       'includes': ['config/archs/BSD-x86/no-asm/openssl.gypi'],
+-    }, 'target_arch=="ia32" and OS=="linux"', {
++    }, 'target_arch=="ia32" and OS in ("linux", "android")', {
+       'includes': ['config/archs/linux-elf/no-asm/openssl.gypi'],
+-    }, 'target_arch=="ia32" and OS=="mac"', {
++    }, 'target_arch=="ia32" and OS in ("mac", "ios")', {
+       'includes': ['config/archs/darwin-i386-cc/no-asm/openssl.gypi'],
+     }, 'target_arch=="ia32" and OS=="solaris"', {
+       'includes': ['config/archs/solaris-x86-gcc/no-asm/openssl.gypi'],
+@@ -26,9 +26,9 @@
+       'includes': ['config/archs/linux-elf/no-asm/openssl.gypi'],
+     }, 'target_arch=="x64" and OS=="freebsd"', {
+       'includes': ['config/archs/BSD-x86_64/no-asm/openssl.gypi'],
+-    }, 'target_arch=="x64" and OS=="mac"', {
++    }, 'target_arch=="x64" and OS in ("mac", "ios")', {
+       'includes': ['config/archs/darwin64-x86_64-cc/no-asm/openssl.gypi'],
+-    }, 'target_arch=="arm64" and OS=="mac"', {
++    }, 'target_arch=="arm64" and OS in ("mac", "ios")', {
+       'includes': ['config/archs/darwin64-arm64-cc/no-asm/openssl.gypi'],
+     }, 'target_arch=="x64" and OS=="solaris"', {
+       'includes': ['config/archs/solaris64-x86_64-gcc/no-asm/openssl.gypi'],
+@@ -36,7 +36,7 @@
+       'includes': ['config/archs/VC-WIN64A/no-asm/openssl.gypi'],
+     }, 'target_arch=="arm64" and OS=="win"', {
+       'includes': ['config/archs/VC-WIN64-ARM/no-asm/openssl.gypi'],
+-    }, 'target_arch=="x64" and OS=="linux"', {
++    }, 'target_arch=="x64" and OS in ("linux", "android")', {
+       'includes': ['config/archs/linux-x86_64/no-asm/openssl.gypi'],
+     }, 'target_arch=="mips64el" and OS=="linux"', {
+       'includes': ['config/archs/linux64-mips64/no-asm/openssl.gypi'],
+diff --git a/deps/zlib/zlib.gyp b/deps/zlib/zlib.gyp
+index 12449e7b0294c922fd0f813acd93029fe65078a0..035185002028023650af9c5c392a14bbadb4c7a9 100644
+--- a/deps/zlib/zlib.gyp
++++ b/deps/zlib/zlib.gyp
+@@ -181,11 +181,18 @@
+           'sources': [
+             '<!@pymod_do_main(GN-scraper "<(ZLIB_ROOT)/BUILD.gn" "\\"zlib\\".*?sources = ")',
+           ],
+-          'include_dirs': [ '<(ZLIB_ROOT)' ],
++          # nodejs-mobile patch: silenced this 'include_dirs', in favor of the next patch below.
++          # 'include_dirs': [ '<(ZLIB_ROOT)' ],
+           'direct_dependent_settings': {
+             'include_dirs': [ '<(ZLIB_ROOT)' ],
+           },
+           'conditions': [
++            # nodejs-mobile patch: for Android, make available <cpu_features.h> from the NDK:
++            ['OS=="android"', {
++              'include_dirs': [ '<(ZLIB_ROOT)', '<(android_ndk_path)/sources/android/cpufeatures' ],
++            }, {
++              'include_dirs': [ '<(ZLIB_ROOT)' ],
++            }],
+             ['OS!="win"', {
+               'cflags!': [ '-ansi' ],
+               'cflags': [ '-Wno-implicit-fallthrough' ],

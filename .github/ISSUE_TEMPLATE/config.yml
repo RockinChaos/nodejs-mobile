@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation and build instructions
+    url: https://github.com/RockinChaos/nodejs-mobile#readme
+    about: Read the current build, testing and contribution instructions.
+  - name: Frequently asked questions
+    url: https://github.com/RockinChaos/nodejs-mobile/blob/HEAD/FAQ.md
+    about: Check common questions about embedding Node.js on mobile.

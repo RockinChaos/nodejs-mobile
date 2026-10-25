@@ -32,7 +32,7 @@ Mobile platforms are different than the usual desktop platforms in that they req
 
 ## Are Node.js native modules supported?
 
-Node native modules, which contain native code, are able to run on nodejs-mobile, as long as they can be cross-compiled for the target platform / CPU. The cross-compiling feature is integrated into the plugins and instructions can be found in the [nodejs-mobile-cordova](https://github.com/janeasystems/nodejs-mobile-cordova#native-modules) or in the [nodejs-mobile-react-native](https://github.com/janeasystems/nodejs-mobile-react-native#native-modules) README, but only Linux and MacOS development machines are currently supported. Modules that contain custom build steps and platform specific code may need workarounds/changes to get them to work. We've created a github repository so that the workarounds/changes can be discussed and shared: https://github.com/janeasystems/nodejs-mobile-module-compat
+Node native modules, which contain native code, are able to run on nodejs-mobile, as long as they can be cross-compiled for the target platform / CPU. The cross-compiling feature is integrated into the plugins and instructions can be found in the [nodejs-mobile-cordova](https://github.com/janeasystems/nodejs-mobile-cordova#native-modules) or in the [nodejs-mobile-react-native](https://github.com/janeasystems/nodejs-mobile-react-native#native-modules) README, but only Linux and MacOS development machines are currently supported. Modules that contain custom build steps and platform specific code may need workarounds/changes to get them to work. Historical workarounds and compatibility notes are collected in the [original project's module compatibility repository](https://github.com/janeasystems/nodejs-mobile-module-compat).
 
 ## How can I improve Node.js load times?
 
@@ -50,6 +50,5 @@ This technique is used in the `nodejs-mobile-cordova` plugin, where Cordova uses
 
 ## Can you support a plugin for the X mobile framework?
 
-We are currently focused on supporting cordova and react-native plugins only, but we are open to community contributions for other frameworks.
-If you are interested in a particular framework, please see if [an issue](https://github.com/janeasystems/nodejs-mobile/issues/) for it has already been opened, and let us know about your interest in there. Otherwise, feel free to open a new issue.
+Framework integrations can be maintained as separate plugins. If a framework needs changes to the core runtime, search [this fork's issues](https://github.com/RockinChaos/nodejs-mobile/issues) or open a [feature request](https://github.com/RockinChaos/nodejs-mobile/issues/new/choose).
 
