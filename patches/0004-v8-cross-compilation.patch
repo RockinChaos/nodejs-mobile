@@ -6,10 +6,10 @@ Source: nodejs/node@1280f5a512d08fc0db9cbe3b3fd858aa89d9db5b
 Source: nodejs-mobile/nodejs-mobile@88c3d79d7915aad1020f693241a1ba403b6b2ff8
 
 diff --git a/tools/v8_gypfiles/toolchain.gypi b/tools/v8_gypfiles/toolchain.gypi
-index ac6a34553d1dc70fab48f707b9b81fb2249dab49..a228e6e5cf364216b819cd4dfe7c08747a067487 100644
+index e614c39a6b53b9afeaa7c1b4ab228a3015d47c20..711428f89856a3b0fc43ea26a3cf699e95119805 100644
 --- a/tools/v8_gypfiles/toolchain.gypi
 +++ b/tools/v8_gypfiles/toolchain.gypi
-@@ -713,6 +713,20 @@
+@@ -598,6 +598,20 @@
            }],
          ],
        }],
@@ -31,10 +31,10 @@ index ac6a34553d1dc70fab48f707b9b81fb2249dab49..a228e6e5cf364216b819cd4dfe7c0874
      'configurations': {
        'Debug': {
 diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
-index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..8c893c47318f494cf30aa808b632e29a9788f74d 100644
+index 370001847ee8b43c0e83e516f65856c85eff3f41..cfdb80c77f3582def07750a71f2e36ead5b6b1ee 100644
 --- a/tools/v8_gypfiles/v8.gyp
 +++ b/tools/v8_gypfiles/v8.gyp
-@@ -1198,7 +1198,7 @@
+@@ -1184,7 +1184,7 @@
            'conditions': [
              ['v8_enable_webassembly==1', {
                'conditions': [
@@ -43,20 +43,16 @@ index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..8c893c47318f494cf30aa808b632e29a
                    'sources': [
                      '<(V8_ROOT)/src/trap-handler/handler-inside-posix.cc',
                      '<(V8_ROOT)/src/trap-handler/handler-outside-posix.cc',
-@@ -1346,8 +1346,10 @@
-           # TODO(targos): add values from v8_third_party_heap_libs to link_settings.libraries
-         }],
+@@ -1327,7 +1327,7 @@
          # Platforms that don't have Compare-And-Swap (CAS) support need to link atomic library
--        # to implement atomic memory access
--        ['v8_current_cpu in ["mips64", "mips64el", "ppc", "arm", "riscv64", "loong64"]', {
-+        # to implement atomic memory access.
-+        # Clang needs it for some atomic operations (https://clang.llvm.org/docs/Toolchain.html#atomics-library).
-+        # nodejs-mobile patch: https://github.com/nodejs/node/pull/57748
-+        ['((OS=="linux" or OS=="android") and clang==1) or (v8_current_cpu in ["mips64", "mips64el", "ppc", "arm", "riscv64", "loong64"])', {
+         # to implement atomic memory access.
+         # Clang needs it for some atomic operations (https://clang.llvm.org/docs/Toolchain.html#atomics-library).
+-        ['(OS=="linux" and clang==1) or (v8_current_cpu in ["mips64", "mips64el", "arm", "riscv64", "loong64"])', {
++        ['((OS=="linux" or OS=="android") and clang==1) or (v8_current_cpu in ["mips64", "mips64el", "arm", "riscv64", "loong64"])', {
            'link_settings': {
              'libraries': ['-latomic', ],
            },
-@@ -1491,6 +1493,8 @@
+@@ -1477,6 +1477,8 @@
              '<(V8_ROOT)/src/base/platform/platform-posix.h',
              '<(V8_ROOT)/src/base/platform/platform-posix-time.cc',
              '<(V8_ROOT)/src/base/platform/platform-posix-time.h',
@@ -65,7 +61,7 @@ index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..8c893c47318f494cf30aa808b632e29a
            ],
            'link_settings': {
              'target_conditions': [
-@@ -1503,9 +1507,18 @@
+@@ -1489,9 +1491,18 @@
            },
            'target_conditions': [
              ['_toolset=="host"', {
@@ -87,15 +83,7 @@ index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..8c893c47318f494cf30aa808b632e29a
                ],
              }, {
                'sources': [
-@@ -1531,6 +1544,7 @@
-           'sources': [
-             '<(V8_ROOT)/src/base/debug/stack_trace_posix.cc',
-             '<(V8_ROOT)/src/base/platform/platform-darwin.cc',
-+            '<(V8_ROOT)/src/base/platform/platform-ios.cc',
-           ]
-         }],
-         ['is_win', {
-@@ -2025,12 +2039,14 @@
+@@ -2073,12 +2084,14 @@
              ],
            }, { # 'OS!="win"'
              'conditions': [
@@ -112,7 +100,7 @@ index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..8c893c47318f494cf30aa808b632e29a
                  'sources': [
                    '<(V8_ROOT)/src/heap/base/asm/ia32/push_registers_asm.cc',
                  ],
-@@ -2261,6 +2277,46 @@
+@@ -2294,6 +2307,46 @@
        },
      },  # postmortem-metadata
  
@@ -159,7 +147,7 @@ index cb82d4f15bc87d2e6df9c9177ab142f83674ee90..8c893c47318f494cf30aa808b632e29a
      {
        'target_name': 'v8_zlib',
        'type': 'static_library',
-@@ -2275,6 +2331,10 @@
+@@ -2308,6 +2361,10 @@
              }]
            ]
          }],

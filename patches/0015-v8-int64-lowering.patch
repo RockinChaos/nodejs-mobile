@@ -1,0 +1,24 @@
+diff --git a/deps/v8/src/compiler/turboshaft/int64-lowering-reducer.h b/deps/v8/src/compiler/turboshaft/int64-lowering-reducer.h
+index ee6fe95a60314b34f93a1318fb139e8605695fdf..0e7d67b724fc0d489f3f72dfffb3ee6857adfc6e 100644
+--- a/deps/v8/src/compiler/turboshaft/int64-lowering-reducer.h
++++ b/deps/v8/src/compiler/turboshaft/int64-lowering-reducer.h
+@@ -637,7 +637,8 @@ class Int64LoweringReducer : public Next {
+       result = __ Word32CountLeadingZeros(high);
+     }
+ 
+-    return __ Tuple<Word32, Word32>(result, __ Word32Constant(0));
++    V<Word32> result_ = result;
++    return __ Tuple(result_, __ Word32Constant(0));
+   }
+ 
+   V<Word32Pair> LowerCtz(V<Word32Pair> input) {
+@@ -650,7 +651,8 @@ class Int64LoweringReducer : public Next {
+       result = __ Word32CountTrailingZeros(low);
+     }
+ 
+-    return __ Tuple<Word32, Word32>(result, __ Word32Constant(0));
++    V<Word32> result_ = result;
++    return __ Tuple(result_, __ Word32Constant(0));
+   }
+ 
+   V<Word32Pair> LowerPopCount(V<Word32Pair> input) {

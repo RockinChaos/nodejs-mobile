@@ -2,10 +2,10 @@ Source: nodejs-mobile/nodejs-mobile@38bcb111d024fd1feaa059947d074e6848415c7e
 Source: nodejs-mobile/nodejs-mobile@7e9640139ac7e3eb92dd4cd60a731b428d531bd7
 
 diff --git a/configure.py b/configure.py
-index 77c87f5a9539714f68278d95ec79878cc52dc18b..3eae880f48965507573e4a03a95e49c24d29385a 100755
+index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..65e3255d10cfc614162484b68c5a0bfc8f097cc7 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1027,6 +1027,11 @@ parser.add_argument('-C',
+@@ -1119,6 +1119,11 @@ parser.add_argument('-C',
      default=None,
      help=argparse.SUPPRESS)
  
@@ -17,7 +17,7 @@ index 77c87f5a9539714f68278d95ec79878cc52dc18b..3eae880f48965507573e4a03a95e49c2
  parser.add_argument('--clang-cl',
      action='store',
      dest='clang_cl',
-@@ -1449,6 +1454,9 @@ def configure_node_cctest_sources(o):
+@@ -1628,6 +1633,9 @@ def configure_node_cctest_sources(o):
      SearchFiles('test/cctest', 'h')
  
  def configure_node(o):
@@ -26,4 +26,4 @@ index 77c87f5a9539714f68278d95ec79878cc52dc18b..3eae880f48965507573e4a03a95e49c2
 +    o['variables']['iossim'] = b(options.ios_simulator)
    if options.dest_os == 'android':
      o['variables']['OS'] = 'android'
-   o['variables']['node_prefix'] = options.prefix
+   o['variables']['node_enable_experimentals'] = b(options.enable_all_experimentals)

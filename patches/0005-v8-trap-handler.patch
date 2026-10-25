@@ -1,10 +1,10 @@
 Source: nodejs-mobile/nodejs-mobile@1f3b514d6e2e2b83562b24f230566ed9dda2bad5
 
 diff --git a/deps/v8/src/trap-handler/handler-outside.cc b/deps/v8/src/trap-handler/handler-outside.cc
-index 22ede82b5631a9a192bbb39303fa60f741408f98..d1a4e4ab5b61a93d422f2686f77a5526bfdcd43a 100644
+index 6e2b40d9f5ec1e23f06e25f0bd7daad30ea49f08..ede435b302cf1504c151eab10a36c1438fdb826b 100644
 --- a/deps/v8/src/trap-handler/handler-outside.cc
 +++ b/deps/v8/src/trap-handler/handler-outside.cc
-@@ -261,11 +261,13 @@ bool EnableTrapHandler(bool use_v8_handler) {
+@@ -307,11 +307,13 @@ bool EnableTrapHandler(bool use_v8_handler) {
    if (!V8_TRAP_HANDLER_SUPPORTED) {
      return false;
    }
@@ -19,21 +19,21 @@ index 22ede82b5631a9a192bbb39303fa60f741408f98..d1a4e4ab5b61a93d422f2686f77a5526
  }
  
 diff --git a/deps/v8/src/trap-handler/trap-handler.h b/deps/v8/src/trap-handler/trap-handler.h
-index 4bf95b8c2208de82614b9d770c4f2685c396058e..64bf5cb51ea72b59d12b6be4dbfdfc436f4d5d4d 100644
+index bd6f19593d3dca3f1431468decc9e7263b5afb14..b330d199ecb9765b062e2953d285fc118b006d20 100644
 --- a/deps/v8/src/trap-handler/trap-handler.h
 +++ b/deps/v8/src/trap-handler/trap-handler.h
-@@ -17,44 +17,8 @@ namespace v8 {
- namespace internal {
- namespace trap_handler {
+@@ -15,45 +15,8 @@
+ 
+ namespace v8::internal::trap_handler {
  
 -// X64 on Linux, Windows, MacOS, FreeBSD.
 -#if V8_HOST_ARCH_X64 && V8_TARGET_ARCH_X64 &&                        \
 -    ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN || \
 -     V8_OS_FREEBSD)
 -#define V8_TRAP_HANDLER_SUPPORTED true
--// Arm64 (non-simulator) on Mac and Linux.
+-// Arm64 (non-simulator) on Linux, Windows, MacOS.
 -#elif V8_TARGET_ARCH_ARM64 && V8_HOST_ARCH_ARM64 && \
--    (V8_OS_DARWIN || (V8_OS_LINUX && !V8_OS_ANDROID))
+-    ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN)
 -#define V8_TRAP_HANDLER_SUPPORTED true
 -// Arm64 simulator on x64 on Linux, Mac, or Windows.
 -//
@@ -54,7 +54,8 @@ index 4bf95b8c2208de82614b9d770c4f2685c396058e..64bf5cb51ea72b59d12b6be4dbfdfc43
 -#define V8_TRAP_HANDLER_VIA_SIMULATOR
 -#define V8_TRAP_HANDLER_SUPPORTED true
 -// RISCV64 (non-simulator) on Linux.
--#elif V8_TARGET_ARCH_RISCV64 && V8_HOST_ARCH_RISCV64 && V8_OS_LINUX
+-#elif V8_TARGET_ARCH_RISCV64 && V8_HOST_ARCH_RISCV64 && V8_OS_LINUX && \
+-    !V8_OS_ANDROID
 -#define V8_TRAP_HANDLER_SUPPORTED true
 -// RISCV64 simulator on x64 on Linux
 -#elif V8_TARGET_ARCH_RISCV64 && V8_HOST_ARCH_X64 && V8_OS_LINUX

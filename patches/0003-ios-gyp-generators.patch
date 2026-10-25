@@ -184,7 +184,7 @@ index 16b6f4e80b119a0eca37db086c2245980a7c357a..41c34c3c28ba8b22ffc893b15f57aef4
  
          writer = MakefileWriter(generator_flags, flavor)
 diff --git a/tools/gyp/pylib/gyp/generator/ninja.py b/tools/gyp/pylib/gyp/generator/ninja.py
-index 4eac6cdb2707d7f184ca998f68725ca0fecef14b..fefdd7c12d18a4a8391aa8b6189cf4f7b862f0b5 100644
+index 3ceaf470cec2036e0f3180376bf4b8b003108508..a2fa65b156c75682cf3054827cfda4448f5d0e73 100644
 --- a/tools/gyp/pylib/gyp/generator/ninja.py
 +++ b/tools/gyp/pylib/gyp/generator/ninja.py
 @@ -42,7 +42,8 @@ generator_default_variables = {
@@ -406,7 +406,7 @@ index 4eac6cdb2707d7f184ca998f68725ca0fecef14b..fefdd7c12d18a4a8391aa8b6189cf4f7
          default_variables.setdefault("SHARED_LIB_SUFFIX", ".dylib")
          default_variables.setdefault(
              "SHARED_LIB_DIR", generator_default_variables["PRODUCT_DIR"]
-@@ -2344,7 +2370,8 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
+@@ -2345,7 +2371,8 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
          master_ninja.variable("ld", CommandWithWrapper("LINK", wrappers, ld))
          master_ninja.variable("ldxx", CommandWithWrapper("LINK", wrappers, ldxx))
          master_ninja.variable("ar", GetEnvironFallback(["AR_target", "AR"], ar))
@@ -416,7 +416,7 @@ index 4eac6cdb2707d7f184ca998f68725ca0fecef14b..fefdd7c12d18a4a8391aa8b6189cf4f7
              # Mac does not use readelf/nm for .TOC generation, so avoiding polluting
              # the master ninja with extra unused variables.
              master_ninja.variable("nm", GetEnvironFallback(["NM_target", "NM"], nm))
-@@ -2512,7 +2539,7 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
+@@ -2513,7 +2540,7 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
                  "solink": "$ld -shared $ldflags -o $lib -Wl,-soname=$soname %(suffix)s",
                  "extract_toc": (
                      "{ $readelf -d $lib | grep SONAME ; "
@@ -425,7 +425,7 @@ index 4eac6cdb2707d7f184ca998f68725ca0fecef14b..fefdd7c12d18a4a8391aa8b6189cf4f7
                  ),
              }
          )
-@@ -2790,7 +2817,8 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
+@@ -2791,7 +2818,8 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params, config_name
          )
  
          spec = target_dicts[qualified_target]

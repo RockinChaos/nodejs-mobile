@@ -1,36 +1,47 @@
 Source: nodejs-mobile/nodejs-mobile@e9caac37b11cd54634013803c8cafe3cc9038f16
 
 diff --git a/src/node_env_var.cc b/src/node_env_var.cc
-index 492d5f455f45a5c8a957ecdabed38709a633f640..2e076785fbdf8c7072b0aab1780a46425ecfaf49 100644
+index 5550a4bee3ce9ec8759d216335a9b2b96e20c96e..3acced17462a968f175e14c7fd648a0626ace0aa 100644
 --- a/src/node_env_var.cc
 +++ b/src/node_env_var.cc
-@@ -224,9 +224,10 @@ std::shared_ptr<KVStore> KVStore::Clone(Isolate* isolate) const {
-   for (uint32_t i = 0; i < keys_length; i++) {
-     Local<Value> key = keys->Get(context, i).ToLocalChecked();
+@@ -234,8 +234,15 @@ std::shared_ptr<KVStore> KVStore::Clone(Isolate* isolate) const {
+       return nullptr;
+     }
      CHECK(key->IsString());
--    copy->Set(isolate,
--              key.As<String>(),
--              Get(isolate, key.As<String>()).ToLocalChecked());
-+    MaybeLocal<String> value_string = Get(isolate, key.As<String>());
-+    if (!value_string.IsEmpty()) {
-+      copy->Set(isolate, key.As<String>(), value_string.ToLocalChecked());
-+    }
+-    if (!Get(isolate, key.As<String>()).ToLocal(&value)) {
+-      return nullptr;
++    {
++      v8::TryCatch try_catch(isolate);
++      if (!Get(isolate, key.As<String>()).ToLocal(&value)) {
++        if (try_catch.HasCaught()) {
++          try_catch.ReThrow();
++          return nullptr;
++        }
++        continue;
++      }
+     }
+     copy->Set(isolate, key.As<String>(), value.As<String>());
    }
-   return copy;
- }
 diff --git a/test/cctest/test_util.cc b/test/cctest/test_util.cc
-index c3beea15f2dfc4c5e857f29d2ec1cdb964f0766b..1938f986482d9f59f85aac79fd70308ecf23610a 100644
+index c3beea15f2dfc4c5e857f29d2ec1cdb964f0766b..cf00b9be11a5ccf7bd0efc061a8b2343616a0a02 100644
 --- a/test/cctest/test_util.cc
 +++ b/test/cctest/test_util.cc
-@@ -21,6 +21,56 @@ using node::UncheckedMalloc;
+@@ -21,6 +21,69 @@ using node::UncheckedMalloc;
  
  class UtilTest : public EnvironmentTestFixture {};
  
 +TEST_F(UtilTest, CloneEnvironmentWithRemovedVariable) {
 +  class VanishingEnvStore final : public node::KVStore {
 +   public:
++    void FailGet() { fail_get_ = true; }
++
 +    v8::MaybeLocal<v8::String> Get(
 +        v8::Isolate* isolate, v8::Local<v8::String> key) const override {
++      if (fail_get_) {
++        isolate->ThrowException(v8::Exception::Error(
++            node::OneByteString(isolate, "forced get failure")));
++        return {};
++      }
 +      return store_->Get(isolate, key);
 +    }
 +    std::optional<std::string> Get(const char* key) const override {
@@ -51,13 +62,14 @@ index c3beea15f2dfc4c5e857f29d2ec1cdb964f0766b..1938f986482d9f59f85aac79fd70308e
 +    void Delete(v8::Isolate* isolate, v8::Local<v8::String> key) override {
 +      store_->Delete(isolate, key);
 +    }
-+    v8::Local<v8::Array> Enumerate(v8::Isolate* isolate) const override {
++    v8::MaybeLocal<v8::Array> Enumerate(v8::Isolate* isolate) const override {
 +      auto keys = store_->Enumerate(isolate);
 +      store_->Delete(isolate, node::OneByteString(isolate, "removed"));
 +      return keys;
 +    }
 +
 +   private:
++    bool fail_get_ = false;
 +    std::shared_ptr<node::KVStore> store_ = node::KVStore::CreateMapKVStore();
 +  } store;
 +
@@ -71,9 +83,14 @@ index c3beea15f2dfc4c5e857f29d2ec1cdb964f0766b..1938f986482d9f59f85aac79fd70308e
 +  store.Set(isolate_, node::OneByteString(isolate_, "removed"),
 +            node::OneByteString(isolate_, "gone"));
 +  auto copy = store.Clone(isolate_);
++  ASSERT_NE(copy, nullptr);
 +  EXPECT_EQ(copy->Get("kept"), std::make_optional(std::string("value")));
 +  EXPECT_EQ(copy->Get("empty"), std::make_optional(std::string("")));
 +  EXPECT_FALSE(copy->Get("removed").has_value());
++  store.FailGet();
++  v8::TryCatch try_catch(isolate_);
++  EXPECT_EQ(store.Clone(isolate_), nullptr);
++  EXPECT_TRUE(try_catch.HasCaught());
 +}
 +
  TEST_F(UtilTest, ListHead) {

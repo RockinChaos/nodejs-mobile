@@ -1,7 +1,7 @@
 Source: nodejs-mobile/nodejs-mobile@38bcb111d024fd1feaa059947d074e6848415c7e
 
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index ba5fb1ae5c03c90b93412f1a5569eca823e34656..8d68eaed8f77bbb6a248e1e7b750009f0af02df6 100644
+index 1458bf48d6b7a3d10399c978aa239c10adedfba4..8da97400ae6178c2b952557d4deddec1185370c8 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
 @@ -48,6 +48,10 @@
@@ -26,10 +26,10 @@ index ba5fb1ae5c03c90b93412f1a5569eca823e34656..8d68eaed8f77bbb6a248e1e7b750009f
    brotli =
      std::to_string(BrotliEncoderVersion() >> 24) +
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index d9c533f100d25aeab1fe8589932a8ddead431258..6a7dec673e2beae6b625b5ebeb9369d281f6d210 100644
+index 8703e4315a999df505ff322aea05a268e017831e..4570990f258d509a44518de994c047e2942757a1 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
-@@ -79,6 +79,13 @@ namespace node {
+@@ -82,6 +82,13 @@ namespace node {
  #define NODE_VERSIONS_KEY_INTL(V)
  #endif  // NODE_HAVE_I18N_SUPPORT
  
@@ -40,23 +40,23 @@ index d9c533f100d25aeab1fe8589932a8ddead431258..6a7dec673e2beae6b625b5ebeb9369d2
 +#define NODE_VERSIONS_KEY_MOBILE(V)
 +#endif  // NODE_MOBILE
 +
- #ifdef OPENSSL_INFO_QUIC
- #define NODE_VERSIONS_KEY_QUIC(V)                                             \
-   V(ngtcp2)                                                                   \
-@@ -97,6 +104,7 @@ namespace node {
+ #if HAVE_SQLITE
+ #define NODE_VERSIONS_KEY_SQLITE(V) V(sqlite)
+ #else
+@@ -92,6 +99,7 @@ namespace node {
    NODE_VERSIONS_KEYS_BASE(V)                                                   \
    NODE_VERSIONS_KEY_CRYPTO(V)                                                  \
    NODE_VERSIONS_KEY_INTL(V)                                                    \
 +  NODE_VERSIONS_KEY_MOBILE(V)                                                  \
-   NODE_VERSIONS_KEY_QUIC(V)                                                    \
    NODE_VERSIONS_KEY_SQLITE(V)
  
+ #define V(key) +1
 diff --git a/test/parallel/test-process-versions.js b/test/parallel/test-process-versions.js
-index 82b08567993a4a7fd4ff468466ee7e46cdbe9900..9cfea376ac5df624011fa02b6598217fca87f7a6 100644
+index 7f54beeea674024272b5f1914f251121917d7c3c..dbf15e69e12d46a2097ff05134a69d624d380f6a 100644
 --- a/test/parallel/test-process-versions.js
 +++ b/test/parallel/test-process-versions.js
-@@ -26,6 +26,11 @@ const expected_keys = [
-   'nbytes',
+@@ -27,6 +27,11 @@ const expected_keys = [
+   'merve',
  ];
  
 +if (process.platform === 'android' || process.platform === 'ios') {

@@ -230,7 +230,7 @@ def build_ios(args):
     env['GYP_DEFINES'] = f'target_arch={arch} host_os=mac target_os=ios'
     set_compiler_commands(env)
     source = prepare(args.source)
-    flags = ['--dest-os=ios', f'--dest-cpu={arch}', '--cross-compiling', '--enable-static', '--openssl-no-asm',
+    flags = ['--dest-os=ios', f'--dest-cpu={arch}', '--cross-compiling', '--openssl-no-asm',
              '--with-intl=none', '--without-node-code-cache', '--without-node-snapshot',
              '--v8-options=--jitless', '--without-npm', '--without-corepack', '--ninja']
     if simulator:
@@ -238,7 +238,7 @@ def build_ios(args):
     run([sys.executable, source / 'configure.py', *flags], cwd=source, env=env)
     git(source, 'diff', '--quiet', '--no-ext-diff', '--no-textconv')
     variables = config(source / 'config.gypi')
-    if (variables['OS'], variables['target_arch'], variables['node_target_type']) != ('ios', arch, 'static_library'):
+    if (variables['OS'], variables['target_arch'], variables['node_shared']) != ('ios', arch, 'false'):
         raise RuntimeError('The iOS configuration does not match the requested target.')
     build_dir = source / 'out' / ('Release-iphonesimulator' if simulator else 'Release-iphoneos')
     dependency_output = source / 'out'
@@ -344,7 +344,7 @@ def combine(args):
         for name, path in inputs.items():
             variables = config(path / 'include/node/config.gypi')
             arch = 'x64' if name == 'x64-simulator' else 'arm64'
-            if (variables['OS'], variables['target_arch'], variables['node_target_type']) != ('ios', arch, 'static_library'):
+            if (variables['OS'], variables['target_arch'], variables['node_shared']) != ('ios', arch, 'false'):
                 raise RuntimeError(f'Wrong iOS build configuration: {name}')
         simulator = output / 'simulator/NodeMobile.framework'
         shutil.copytree(inputs['arm64-simulator'] / 'NodeMobile.framework', simulator)

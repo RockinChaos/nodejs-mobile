@@ -1,10 +1,10 @@
 Source: nodejs-mobile/nodejs-mobile@70ae14a400db9d70c9e873087359f67456651b9c
 
 diff --git a/src/node.cc b/src/node.cc
-index db0011b429f25cab296ca425564effe87383f506..85aa5f79ba3432c80a85d249e69242c58ab163ee 100644
+index 92c5fd8cb66f063e7cb4084b98500f28c60ec29a..5bd029b5a241582d5e48d4805a9b3d049f96cf52 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -746,6 +746,8 @@ void ResetStdio() {
+@@ -698,6 +698,8 @@ void ResetStdio() {
        CHECK_NE(err, -1);
      }
  
@@ -13,7 +13,7 @@ index db0011b429f25cab296ca425564effe87383f506..85aa5f79ba3432c80a85d249e69242c5
      if (s.isatty) {
        sigset_t sa;
        int err;
-@@ -767,6 +769,7 @@ void ResetStdio() {
+@@ -719,6 +721,7 @@ void ResetStdio() {
        // - if the process group is orphaned, e.g. because the user logged out,
        //   tcsetattr fails with EIO
      }

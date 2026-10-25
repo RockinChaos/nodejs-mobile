@@ -28,7 +28,7 @@ def dependency_versions(source, variables):
 
     if enabled('v8_enable_i18n_support'):
         raise RuntimeError('Build-time version reporting requires --with-intl=none.')
-    shared = [name for name in ('ada', 'brotli', 'cares', 'libuv', 'nghttp2',
+    shared = [name for name in ('ada', 'brotli', 'cares', 'libuv', 'merve', 'nghttp2',
                                'nghttp3', 'ngtcp2', 'openssl', 'simdjson',
                                'simdutf', 'sqlite', 'uvwasi', 'zlib', 'zstd')
               if enabled(f'node_shared_{name}')]
@@ -65,13 +65,19 @@ def dependency_versions(source, variables):
         'acorn': ('src/acorn_version.h', 'ACORN_VERSION'),
         'ada': ('deps/ada/ada.h', 'ADA_VERSION'),
         'ares': ('deps/cares/include/ares_version.h', 'ARES_VERSION_STR'),
-        'cjs_module_lexer': ('src/cjs_module_lexer_version.h', 'CJS_MODULE_LEXER_VERSION'),
         'nbytes': ('deps/nbytes/include/nbytes.h', 'NBYTES_VERSION'),
         'nghttp2': ('deps/nghttp2/lib/includes/nghttp2/nghttp2ver.h', 'NGHTTP2_VERSION'),
         'simdjson': ('deps/simdjson/simdjson.h', 'SIMDJSON_VERSION'),
-        'simdutf': ('deps/simdutf/simdutf.h', 'SIMDUTF_VERSION'),
+        'simdutf': ('deps/simdutf/simdutf.h' if (source / 'deps/simdutf').is_dir()
+                    else 'deps/v8/third_party/simdutf/simdutf.h', 'SIMDUTF_VERSION'),
         'zlib': ('src/zlib_version.h', 'ZLIB_VERSION'),
     }
+    if 'node_shared_merve' in variables:
+        headers['merve'] = ('deps/merve/merve.h', 'MERVE_VERSION')
+    else:
+        headers['cjs_module_lexer'] = ('src/cjs_module_lexer_version.h', 'CJS_MODULE_LEXER_VERSION')
+    if 'node_use_quic' in variables:
+        versions.update(ngtcp2='', nghttp3='')
     if not variables.get('node_shared_builtin_undici_undici_path'):
         headers['undici'] = ('src/undici_version.h', 'UNDICI_VERSION')
     if enabled('node_use_amaro') and not variables.get('node_shared_builtin_amaro_dist_index_path'):
@@ -87,7 +93,7 @@ def dependency_versions(source, variables):
         headers['openssl'] = (f'deps/openssl/config/archs/{arch}/{mode}/include/openssl/opensslv.h',
                               'OPENSSL_FULL_VERSION_STR')
         headers['ncrypto'] = ('deps/ncrypto/ncrypto.h', 'NCRYPTO_VERSION')
-        if enabled('openssl_quic'):
+        if enabled('openssl_quic') or enabled('node_use_quic'):
             headers['ngtcp2'] = ('deps/ngtcp2/ngtcp2/lib/includes/ngtcp2/version.h', 'NGTCP2_VERSION')
             headers['nghttp3'] = ('deps/ngtcp2/nghttp3/lib/includes/nghttp3/version.h', 'NGHTTP3_VERSION')
     for name, (path, define) in headers.items():
