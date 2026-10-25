@@ -213,8 +213,7 @@ def build_ios(args):
     if (variables['OS'], variables['target_arch'], variables['node_target_type']) != ('ios', arch, 'static_library'):
         raise RuntimeError('The iOS configuration does not match the requested target.')
     build_dir = source / 'out' / ('Release-iphonesimulator' if simulator else 'Release-iphoneos')
-    dependency_output = source / 'out/ios-dependencies'
-    dependency_output.mkdir()
+    dependency_output = source / 'out'
     run([sys.executable, source / 'tools/gyp_node.py', '--no-parallel',
          '-Dconfiguring_node=1', f'-Dpython={sys.executable}',
          '-f', 'dump_dependency_json-ios', f'-Goutput_dir={dependency_output}'], cwd=source, env=env)
