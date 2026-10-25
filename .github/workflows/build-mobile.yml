@@ -3,9 +3,9 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    paths: ['.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
+    paths: ['.github/workflows/build-mobile.yml', '.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
   pull_request:
-    paths: ['.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
+    paths: ['.github/workflows/build-mobile.yml', '.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
 
 permissions:
   contents: read
@@ -80,7 +80,7 @@ jobs:
   build-android:
     needs: verify-source
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -119,7 +119,7 @@ jobs:
 
   build-ios:
     needs: verify-source
-    timeout-minutes: 240
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -141,6 +141,7 @@ jobs:
         run: >-
           python scripts/build.py ios
           --target '${{ matrix.target }}'
+          ${{ matrix.target == 'x64-simulator' && '--jobs 6' || '' }}
           --output '.build/artifacts/ios-${{ matrix.target }}'
       - uses: actions/upload-artifact@v7
         with:
