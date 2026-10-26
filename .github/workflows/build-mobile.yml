@@ -3,8 +3,7 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    paths: ['.github/workflows/build-mobile.yml', '.github/cliff.toml', '.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
-  pull_request:
+    branches: ['**']
     paths: ['.github/workflows/build-mobile.yml', '.github/cliff.toml', '.gitmodules', 'node-source.json', 'node', 'patches/**', 'src/**', 'tools/**', 'scripts/**']
 
 permissions:
@@ -188,9 +187,7 @@ jobs:
           if-no-files-found: error
           overwrite: true
       - name: Remove Android build slices
-        if: >-
-          steps.combined.outputs.artifact-id != '' &&
-          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        if: steps.combined.outputs.artifact-id != ''
         continue-on-error: true
         uses: actions/github-script@v8
         with:
@@ -239,9 +236,7 @@ jobs:
           if-no-files-found: error
           overwrite: true
       - name: Remove iOS build slices
-        if: >-
-          steps.combined.outputs.artifact-id != '' &&
-          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        if: steps.combined.outputs.artifact-id != ''
         continue-on-error: true
         uses: actions/github-script@v8
         with:
@@ -288,7 +283,6 @@ jobs:
 
   draft-release:
     needs: [check-release, versions]
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
