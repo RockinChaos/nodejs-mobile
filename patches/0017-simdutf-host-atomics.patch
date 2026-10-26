@@ -1,0 +1,18 @@
+diff --git a/tools/v8_gypfiles/simdutf.gyp b/tools/v8_gypfiles/simdutf.gyp
+index b5dc014bbe9f9a5676eaed07d9e5a8dfda5ed455..df37dbb677b473bb6bca7ba49564be4f5e06b4e9 100644
+--- a/tools/v8_gypfiles/simdutf.gyp
++++ b/tools/v8_gypfiles/simdutf.gyp
+@@ -13,6 +13,13 @@
+           '<(SIMDUTF_ROOT)',
+         ],
+       },
++      'conditions': [
++        ['_toolset=="host" and host_os=="linux"', {
++          'link_settings': {
++            'libraries': ['-latomic'],
++          },
++        }],
++      ],
+       'include_dirs': ['.'],
+       'sources': [
+         '<(SIMDUTF_ROOT)/simdutf.cpp',
