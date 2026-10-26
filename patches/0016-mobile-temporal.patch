@@ -1,0 +1,34 @@
+diff --git a/deps/crates/crates.gyp b/deps/crates/crates.gyp
+index 216b0cff5128855a4a3dac072b143299a2775284..0df02af0ee2055f715d62f111069c4a99c46c042 100644
+--- a/deps/crates/crates.gyp
++++ b/deps/crates/crates.gyp
+@@ -48,6 +48,29 @@
+   'targets': [
+     {
+       'target_name': 'node_crates',
++      'variables': {
++        'conditions': [
++          ['_toolset=="host" and OS in "android ios"', {
++            'cargo_build_flags': [],
++            'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/debug/libnode_crates.a',
++            'conditions': [
++              ['build_type=="Release"', {
++                'cargo_build_flags': ['--release'],
++                'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/release/libnode_crates.a',
++              }],
++              ['OS=="android" and host_os=="linux" and host_arch=="x64" and target_arch=="arm"', {
++                'cargo_build_flags': ['--target', 'i686-unknown-linux-gnu'],
++                'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/i686-unknown-linux-gnu/debug/libnode_crates.a',
++                'conditions': [
++                  ['build_type=="Release"', {
++                    'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/i686-unknown-linux-gnu/release/libnode_crates.a',
++                  }],
++                ],
++              }],
++            ],
++          }],
++        ],
++      },
+       'type': 'none',
+       'toolsets': ['host', 'target'],
+       'hard_dependency': 1,

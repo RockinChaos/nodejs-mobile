@@ -28,7 +28,7 @@ def dependency_versions(source, variables):
 
     if enabled('v8_enable_i18n_support'):
         raise RuntimeError('Build-time version reporting requires --with-intl=none.')
-    shared = [name for name in ('ada', 'brotli', 'cares', 'libuv', 'merve', 'nghttp2',
+    shared = [name for name in ('ada', 'brotli', 'cares', 'ffi', 'libuv', 'merve', 'nghttp2',
                                'nghttp3', 'ngtcp2', 'openssl', 'simdjson',
                                'simdutf', 'sqlite', 'uvwasi', 'zlib', 'zstd')
               if enabled(f'node_shared_{name}')]
@@ -82,6 +82,12 @@ def dependency_versions(source, variables):
         headers['undici'] = ('src/undici_version.h', 'UNDICI_VERSION')
     if enabled('node_use_amaro') and not variables.get('node_shared_builtin_amaro_dist_index_path'):
         headers['amaro'] = ('src/amaro_version.h', 'AMARO_VERSION')
+    if enabled('node_use_ffi'):
+        generator = ast.parse((source / 'deps/libffi/generate-headers.py').read_text(encoding='utf-8'))
+        version = next(node.value for node in generator.body if isinstance(node, ast.Assign)
+                       and any(isinstance(target, ast.Name) and target.id == 'LIBFFI_VERSION'
+                               for target in node.targets))
+        versions['libffi'] = ast.literal_eval(version)
     if enabled('node_use_sqlite'):
         headers['sqlite'] = ('deps/sqlite/sqlite3.h', 'SQLITE_VERSION')
     if enabled('node_use_openssl'):

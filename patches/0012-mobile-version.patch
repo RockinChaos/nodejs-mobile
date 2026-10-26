@@ -1,12 +1,12 @@
 Source: nodejs-mobile/nodejs-mobile@38bcb111d024fd1feaa059947d074e6848415c7e
 
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index 1458bf48d6b7a3d10399c978aa239c10adedfba4..8da97400ae6178c2b952557d4deddec1185370c8 100644
+index 0f3a76105a163f5b382e459ba862b8b3b5e38655..1ef9ec58dfadf601a4627d8c9f44bdacb5fd3221 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
-@@ -48,6 +48,10 @@
- #include <unicode/uversion.h>
- #endif  // NODE_HAVE_I18N_SUPPORT
+@@ -55,6 +55,10 @@
+ #include "LIEF/version.h"
+ #endif
  
 +#ifdef NODE_MOBILE
 +#include "node_mobile_version.h"
@@ -15,7 +15,7 @@ index 1458bf48d6b7a3d10399c978aa239c10adedfba4..8da97400ae6178c2b952557d4deddec1
  namespace node {
  
  namespace per_process {
-@@ -116,6 +120,9 @@ Metadata::Versions::Versions() {
+@@ -130,6 +134,9 @@ Metadata::Versions::Versions() {
        NODE_STRINGIFY(LLHTTP_VERSION_MINOR)
        "."
        NODE_STRINGIFY(LLHTTP_VERSION_PATCH);
@@ -26,7 +26,7 @@ index 1458bf48d6b7a3d10399c978aa239c10adedfba4..8da97400ae6178c2b952557d4deddec1
    brotli =
      std::to_string(BrotliEncoderVersion() >> 24) +
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index 8703e4315a999df505ff322aea05a268e017831e..4570990f258d509a44518de994c047e2942757a1 100644
+index 57043a0356ca763869e207a054a3599a107f2abe..cf41ce6b78770ae407c270b8eee8ebed131aa48f 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -82,6 +82,13 @@ namespace node {
@@ -43,16 +43,16 @@ index 8703e4315a999df505ff322aea05a268e017831e..4570990f258d509a44518de994c047e2
  #if HAVE_SQLITE
  #define NODE_VERSIONS_KEY_SQLITE(V) V(sqlite)
  #else
-@@ -92,6 +99,7 @@ namespace node {
+@@ -104,6 +111,7 @@ namespace node {
    NODE_VERSIONS_KEYS_BASE(V)                                                   \
    NODE_VERSIONS_KEY_CRYPTO(V)                                                  \
    NODE_VERSIONS_KEY_INTL(V)                                                    \
 +  NODE_VERSIONS_KEY_MOBILE(V)                                                  \
-   NODE_VERSIONS_KEY_SQLITE(V)
- 
- #define V(key) +1
+   NODE_VERSIONS_KEY_SQLITE(V)                                                  \
+   NODE_VERSIONS_KEY_LIBFFI(V)                                                  \
+   NODE_VERSIONS_KEY_LIEF(V)
 diff --git a/test/parallel/test-process-versions.js b/test/parallel/test-process-versions.js
-index 7f54beeea674024272b5f1914f251121917d7c3c..dbf15e69e12d46a2097ff05134a69d624d380f6a 100644
+index 420625b01f5989549b71abd469a4970ca188728e..67e8169f1e6a9eb8348e3e710a9e036d65eba7a3 100644
 --- a/test/parallel/test-process-versions.js
 +++ b/test/parallel/test-process-versions.js
 @@ -27,6 +27,11 @@ const expected_keys = [

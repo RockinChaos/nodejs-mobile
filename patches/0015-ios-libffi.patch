@@ -1,0 +1,31 @@
+diff --git a/deps/libffi/generate-headers.py b/deps/libffi/generate-headers.py
+index fb58edf17b6698a09b40c86c5c6571eaa10cc629..122e01174145a088f92a8352eee81866e7339ed4 100644
+--- a/deps/libffi/generate-headers.py
++++ b/deps/libffi/generate-headers.py
+@@ -70,7 +70,7 @@ def has_long_double(os_name, target_arch):
+     if os_name == 'win':
+         return '0'
+
+-    if os_name == 'mac' and target_arch == 'arm64':
++    if os_name in ('ios', 'mac') and target_arch == 'arm64':
+         return '0'
+
+     if target_arch == 'arm':
+@@ -81,7 +81,7 @@ def has_long_double(os_name, target_arch):
+
+ def uses_exec_trampoline_table(os_name, target_arch):
+     target_arch = normalize_arch(target_arch)
+-    return os_name == 'mac' and target_arch in ('arm', 'arm64')
++    return os_name in ('ios', 'mac') and target_arch in ('arm', 'arm64')
+
+
+ def render_ffi_header(base_dir, os_name, target_arch, target):
+@@ -149,7 +149,7 @@ def render_fficonfig(os_name, target_arch):
+             '#define HAVE_MMAP_DEV_ZERO 1',
+         ])
+
+-    if os_name == 'mac' and target_arch == 'arm64':
++    if os_name in ('ios', 'mac') and target_arch == 'arm64':
+         lines.extend([
+             '#if defined(__arm64e__)',
+             '#define HAVE_ARM64E_PTRAUTH 1',

@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/nodejs/node.git",
-  "version": "24.22.1",
-  "tag": "v24.22.1",
-  "commit": "ce7aaf1cee78b8cf0ce17364260535c418d3ed26",
-  "tree": "73c6ca56c55339a7de527c140b19bf3876fab76f"
+  "version": "26.12.1",
+  "tag": "v26.12.1",
+  "commit": "bc2e01dcf6acd5cf7d169b5f26cf89abaaeb41f1",
+  "tree": "a276aff53d09a7a76f856313e322f3b9f22c1b6d"
 }

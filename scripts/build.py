@@ -67,8 +67,8 @@ def copy_headers(source, destination):
 
 def compiler_environment():
     env = os.environ.copy()
-    env['CC_host'] = shutil.which('clang') or ''
-    env['CXX_host'] = shutil.which('clang++') or ''
+    env['CC_host'] = shutil.which(env.get('CC_host', 'clang')) or ''
+    env['CXX_host'] = shutil.which(env.get('CXX_host', 'clang++')) or ''
     if not env['CC_host'] or not env['CXX_host']:
         raise RuntimeError('Host clang and clang++ are required.')
     if not shutil.which('ninja'):
@@ -162,6 +162,9 @@ def build_android(args):
     env = compiler_environment()
     env['CC'] = str(toolchain / f'bin/{triple}{args.api}-clang')
     env['CXX'] = str(toolchain / f'bin/{triple}{args.api}-clang++')
+    rust_target = {'arm': 'armv7-linux-androideabi', 'arm64': 'aarch64-linux-android',
+                   'x64': 'x86_64-linux-android'}[args.arch]
+    env[f'CARGO_TARGET_{rust_target.upper().replace("-", "_")}_LINKER'] = env['CC']
     env['AR'] = env['AR_target'] = str(toolchain / 'bin/llvm-ar')
     env['NM_target'] = str(toolchain / 'bin/llvm-nm')
     env['READELF_target'] = str(toolchain / 'bin/llvm-readelf')
@@ -179,7 +182,7 @@ def build_android(args):
     source = prepare(args.source)
     run([sys.executable, source / 'configure.py', '--dest-os=android', f'--dest-cpu={args.arch}',
          '--cross-compiling', '--shared', '--openssl-no-asm', '--with-intl=none',
-         '--without-npm', '--without-corepack', '--ninja'], cwd=source, env=env)
+         '--without-npm', '--v8-enable-temporal-support', '--ninja'], cwd=source, env=env)
     git(source, 'diff', '--quiet', '--no-ext-diff', '--no-textconv')
     run(['ninja', '-C', source / 'out/Release', '-j', args.jobs, 'libnode'], env=env)
     candidates = [source / 'out/Release' / name for name in
@@ -218,11 +221,12 @@ def build_ios(args):
     env['CC'] = env['CC_host']
     env['CXX'] = env['CXX_host']
     env['GYP_DEFINES'] = f'target_arch={arch} host_os=mac target_os=ios'
+    env['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
     set_compiler_commands(env)
     source = prepare(args.source)
     flags = ['--dest-os=ios', f'--dest-cpu={arch}', '--cross-compiling', '--openssl-no-asm',
              '--with-intl=none', '--without-node-code-cache', '--without-node-snapshot',
-             '--v8-options=--jitless', '--without-npm', '--without-corepack', '--ninja']
+             '--v8-options=--jitless', '--without-npm', '--v8-enable-temporal-support', '--ninja']
     if simulator:
         flags.append('--ios-simulator')
     run([sys.executable, source / 'configure.py', *flags], cwd=source, env=env)
@@ -247,6 +251,11 @@ def build_ios(args):
     run(['ninja', '-C', build_dir, '-j', args.jobs,
          *sorted(target.rsplit(':', 1)[1].removesuffix('#target') for target in targets)], env=env)
     archives = sorted(build_dir.glob('*.a'))
+    if variables.get('v8_enable_temporal_support'):
+        rust_library = build_dir / 'obj/gen' / variables['cargo_rust_target'] / 'release/libnode_crates.a'
+        if not rust_library.is_file():
+            raise RuntimeError('The iOS build did not produce the Temporal Rust library.')
+        archives.append(rust_library)
     if not any(path.name == 'libnode.a' for path in archives):
         raise RuntimeError('The iOS build did not produce libnode.a.')
     framework = output / 'NodeMobile.framework'

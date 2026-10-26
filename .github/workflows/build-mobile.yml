@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ANDROID_NDK_VERSION: r27d
+  ANDROID_NDK_VERSION: r29
 
 jobs:
   check-release:
@@ -85,6 +85,9 @@ jobs:
   build-android:
     needs: verify-source
     runs-on: ubuntu-24.04
+    env:
+      CC_host: clang-19
+      CXX_host: clang++-19
     timeout-minutes: 360
     strategy:
       fail-fast: false
@@ -97,17 +100,18 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
-      - name: Install 32-bit host support
-        if: matrix.arch == 'arm'
+      - name: Install host toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-multilib g++-multilib
+          sudo apt-get install -y clang-19 ${{ matrix.arch == 'arm' && 'gcc-multilib g++-multilib' || '' }}
       - uses: nttld/setup-ndk@v1
         id: ndk
         with:
           ndk-version: ${{ env.ANDROID_NDK_VERSION }}
           local-cache: false
           add-to-path: false
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.arch == 'arm' && 'armv7-linux-androideabi i686-unknown-linux-gnu' || matrix.arch == 'arm64' && 'aarch64-linux-android' || 'x86_64-linux-android' }}
       - name: Build library and validate addon exports
         run: >-
           python scripts/build.py android
@@ -134,7 +138,7 @@ jobs:
           - {target: x64-simulator, runner: macos-15-intel}
     runs-on: ${{ matrix.runner }}
     env:
-      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v7
         with:
@@ -142,6 +146,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target == 'arm64' && 'aarch64-apple-ios' || matrix.target == 'arm64-simulator' && 'aarch64-apple-ios-sim' || 'x86_64-apple-ios' }}
       - name: Build framework and validate addon exports
         run: >-
           python scripts/build.py ios
@@ -214,7 +220,7 @@ jobs:
     outputs:
       versions: ${{ steps.versions.outputs.versions }}
     env:
-      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8

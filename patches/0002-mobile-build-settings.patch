@@ -11,19 +11,19 @@ Source: nodejs-mobile/nodejs-mobile@255f34b13e03e36e91b8dbc879947db50d72027d
 Source: nodejs-mobile/nodejs-mobile@474a13a70da73d3e65bda17cd83cad7403e80ed4
 
 diff --git a/common.gypi b/common.gypi
-index b4161293343cc05a868d2734419367fc7146a664..92929705fb74c5e9189ddaa27170ccffdea3a537 100644
+index 2967d1e63a4859061ee850619fafa1a70a589104..fc290efbcb51603380e2b1846f7771c4c5ebf910 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -42,7 +42,7 @@
+@@ -44,7 +44,7 @@
  
      # Reset this number to 0 on major V8 upgrades.
      # Increment by one for each non-official patch applied to deps/v8.
--    'v8_embedder_string': '-node.58',
-+    'v8_embedder_string': '-node.58-mobile.0',
+-    'v8_embedder_string': '-node.40',
++    'v8_embedder_string': '-node.40-mobile.0',
  
      ##### V8 defaults for Node.js #####
  
-@@ -115,7 +115,7 @@
+@@ -111,7 +111,7 @@
          'obj_dir%': '<(PRODUCT_DIR)/obj.target',
          'v8_base': '<(PRODUCT_DIR)/obj.target/tools/v8_gypfiles/libv8_snapshot.a',
        }],
@@ -32,16 +32,16 @@ index b4161293343cc05a868d2734419367fc7146a664..92929705fb74c5e9189ddaa27170ccff
          'obj_dir%': '<(PRODUCT_DIR)/obj.target',
          'v8_base': '<(PRODUCT_DIR)/libv8_snapshot.a',
        }],
-@@ -234,7 +234,7 @@
-             # increase performance, number from experimentation
-             'cflags': [ '-qINLINE=::150:100000' ]
+@@ -223,7 +223,7 @@
+             # pull in V8's postmortem metadata
+             'ldflags': [ '-Wl,-z,allextract' ]
            }],
--          ['OS!="mac" and OS!="win" and OS!="zos"', {
-+          ['OS!="mac" and OS!="ios" and OS!="win" and OS!="zos"', {
+-          ['OS!="mac" and OS!="win"', {
++          ['OS!="mac" and OS!="ios" and OS!="win"', {
              # -fno-omit-frame-pointer is necessary for the --perf_basic_prof
              # flag to work correctly. perf(1) gets confused about JS stack
              # frames otherwise, even with --call-graph dwarf.
-@@ -312,7 +312,7 @@
+@@ -336,7 +336,7 @@
              ],
            },],
            ['OS == "android"', {
@@ -50,7 +50,7 @@ index b4161293343cc05a868d2734419367fc7146a664..92929705fb74c5e9189ddaa27170ccff
              'ldflags': [ '-fPIC' ]
            }],
            ['clang==1', {
-@@ -441,6 +441,30 @@
+@@ -465,6 +465,30 @@
      'msvs_cygwin_shell': 0, # prevent actions from trying to use cygwin
  
      'conditions': [
@@ -81,16 +81,16 @@ index b4161293343cc05a868d2734419367fc7146a664..92929705fb74c5e9189ddaa27170ccff
        [ 'configuring_node', {
          'msvs_configuration_attributes': {
            'OutputDirectory': '<(DEPTH)/out/$(Configuration)/',
-@@ -453,7 +477,7 @@
+@@ -477,7 +501,7 @@
        [ 'target_arch=="arm64"', {
          'msvs_configuration_platform': 'arm64',
        }],
--      ['asan == 1 and OS != "mac" and OS != "zos"', {
-+      ['asan == 1 and OS != "mac" and OS != "ios" and OS != "zos"', {
+-      ['asan == 1 and OS != "mac"', {
++      ['asan == 1 and OS != "mac" and OS != "ios"', {
          'cflags+': [
            '-fno-omit-frame-pointer',
            '-fsanitize=address',
-@@ -463,7 +487,7 @@
+@@ -487,7 +511,7 @@
          'cflags!': [ '-fomit-frame-pointer' ],
          'ldflags': [ '-fsanitize=address' ],
        }],
@@ -99,16 +99,16 @@ index b4161293343cc05a868d2734419367fc7146a664..92929705fb74c5e9189ddaa27170ccff
          'xcode_settings': {
            'OTHER_CFLAGS+': [
              '-fno-omit-frame-pointer',
-@@ -481,7 +505,7 @@
+@@ -505,7 +529,7 @@
            }],
          ],
        }],
--      ['ubsan == 1 and OS != "mac" and OS != "zos"', {
-+      ['ubsan == 1 and OS != "mac" and OS != "ios" and OS != "zos"', {
+-      ['ubsan == 1 and OS != "mac"', {
++      ['ubsan == 1 and OS != "mac" and OS != "ios"', {
          'cflags+': [
            '-fno-omit-frame-pointer',
            '-fsanitize=undefined',
-@@ -490,7 +514,7 @@
+@@ -514,7 +538,7 @@
          'cflags!': [ '-fno-omit-frame-pointer' ],
          'ldflags': [ '-fsanitize=undefined' ],
        }],
@@ -117,7 +117,7 @@ index b4161293343cc05a868d2734419367fc7146a664..92929705fb74c5e9189ddaa27170ccff
          'xcode_settings': {
            'OTHER_CFLAGS+': [
              '-fno-omit-frame-pointer',
-@@ -601,11 +625,13 @@
+@@ -616,11 +640,13 @@
            }],
            ['_toolset=="host"', {
              'conditions': [
@@ -133,7 +133,7 @@ index b4161293343cc05a868d2734419367fc7146a664..92929705fb74c5e9189ddaa27170ccff
                  'cflags': [ '-m64' ],
                  'ldflags': [ '-m64' ],
                }],
-@@ -773,6 +799,96 @@
+@@ -802,6 +828,96 @@
            }],
          ],
        }],
@@ -231,10 +231,10 @@ index b4161293343cc05a868d2734419367fc7146a664..92929705fb74c5e9189ddaa27170ccff
          'ldflags': [
            '-Wl,--export-dynamic',
 diff --git a/node.gyp b/node.gyp
-index 62c748b130c7ddec9e429d48925e79d5a395bd73..01d82a5cda9b6226941e08d26afaf3985a38cc98 100644
+index 5334b8a746dad310e2db929bad24454dfb495db6..655375c1e4164983c981c4123b4053d4eaa25588 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -1581,7 +1581,7 @@
+@@ -1653,7 +1653,7 @@
          [ 'node_shared_libuv=="false"', {
            'dependencies': [ 'deps/uv/uv.gyp:libuv#host' ],
          }],
@@ -244,10 +244,10 @@ index 62c748b130c7ddec9e429d48925e79d5a395bd73..01d82a5cda9b6226941e08d26afaf398
          }],
          [ 'debug_node=="true"', {
 diff --git a/node.gypi b/node.gypi
-index 6587270c9e52f3705d67961768004bd72193a1f2..ffce5184cd6c24e6c88096ff424547e83734e39f 100644
+index 9eb972adc47f067fd931b2cdbd96460ff5d33a3b..67d8100fa56cc074313d430fe21a9d3d9e42bbf4 100644
 --- a/node.gypi
 +++ b/node.gypi
-@@ -264,6 +264,11 @@
+@@ -280,6 +280,11 @@
          'NODE_PLATFORM="darwin"',
        ],
      }],
@@ -259,7 +259,7 @@ index 6587270c9e52f3705d67961768004bd72193a1f2..ffce5184cd6c24e6c88096ff424547e8
      [ 'OS=="freebsd"', {
        'libraries': [
          '-lutil',
-@@ -342,7 +347,7 @@
+@@ -358,7 +363,7 @@
          ],
        },
      }],
@@ -268,7 +268,7 @@ index 6587270c9e52f3705d67961768004bd72193a1f2..ffce5184cd6c24e6c88096ff424547e8
        'cflags!': [ '-O3' ],
        'ldflags': [ '--coverage',
                     '-g',
-@@ -390,11 +395,15 @@
+@@ -406,11 +411,15 @@
            'defines': [ 'OPENSSL_API_COMPAT=0x10100000L', ],
            'dependencies': [
              './deps/openssl/openssl.gyp:openssl',
@@ -287,9 +287,9 @@ index 6587270c9e52f3705d67961768004bd72193a1f2..ffce5184cd6c24e6c88096ff424547e8
              # -force_load or --whole-archive are not applicable for
              # the static library
              [ 'force_load=="true"', {
-@@ -461,5 +470,10 @@
-     }, {
-       'defines': [ 'HAVE_QUIC=0' ]
+@@ -484,5 +493,10 @@
+         }],
+       ],
      }],
 +    [ 'OS=="android" or OS=="ios"', {
 +      'defines': [

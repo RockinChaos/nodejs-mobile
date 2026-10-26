@@ -1,10 +1,10 @@
 Source: nodejs-mobile/nodejs-mobile@e9caac37b11cd54634013803c8cafe3cc9038f16
 
 diff --git a/src/node_env_var.cc b/src/node_env_var.cc
-index 5550a4bee3ce9ec8759d216335a9b2b96e20c96e..3acced17462a968f175e14c7fd648a0626ace0aa 100644
+index 8a16f9ec136df86e75d71ccfe1d40ddab3bf8f92..46797076447fd2377b46a0e3ef6bfe62b6407dfa 100644
 --- a/src/node_env_var.cc
 +++ b/src/node_env_var.cc
-@@ -234,8 +234,15 @@ std::shared_ptr<KVStore> KVStore::Clone(Isolate* isolate) const {
+@@ -299,8 +299,15 @@ std::shared_ptr<KVStore> KVStore::Clone(Isolate* isolate) const {
        return nullptr;
      }
      CHECK(key->IsString());

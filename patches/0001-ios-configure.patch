@@ -2,13 +2,13 @@ Source: nodejs-mobile/nodejs-mobile@38bcb111d024fd1feaa059947d074e6848415c7e
 Source: nodejs-mobile/nodejs-mobile@7e9640139ac7e3eb92dd4cd60a731b428d531bd7
 
 diff --git a/configure.py b/configure.py
-index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..65e3255d10cfc614162484b68c5a0bfc8f097cc7 100755
+index a3769ff2d8798341046935bf1dd1b2783d514a0f..9c0731d38bc762072c1c572592b8538b59cc5389 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1119,6 +1119,11 @@ parser.add_argument('-C',
+@@ -1304,6 +1304,11 @@ parser.add_argument('-C',
      default=None,
      help=argparse.SUPPRESS)
- 
+
 +parser.add_argument('--ios-simulator',
 +    action='store_true',
 +    dest='ios_simulator',
@@ -17,9 +17,9 @@ index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..65e3255d10cfc614162484b68c5a0bfc
  parser.add_argument('--clang-cl',
      action='store',
      dest='clang_cl',
-@@ -1628,6 +1633,9 @@ def configure_node_cctest_sources(o):
+@@ -1901,6 +1906,9 @@ def configure_node_cctest_sources(o):
      SearchFiles('test/cctest', 'h')
- 
+
  def configure_node(o):
 +  if options.dest_os == 'ios':
 +    o['variables']['OS'] = 'ios'
@@ -27,3 +27,21 @@ index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..65e3255d10cfc614162484b68c5a0bfc
    if options.dest_os == 'android':
      o['variables']['OS'] = 'android'
    o['variables']['node_enable_experimentals'] = b(options.enable_all_experimentals)
+@@ -1946,6 +1954,17 @@ def configure_node(o):
+   if flavor == 'mac' and target_arch == 'x64':
+     o['variables']['cargo_rust_target'] = 'x86_64-apple-darwin'
+
++  if flavor == 'android':
++    o['variables']['cargo_rust_target'] = {
++      'arm': 'armv7-linux-androideabi',
++      'arm64': 'aarch64-linux-android',
++      'x64': 'x86_64-linux-android',
++    }[target_arch]
++  elif flavor == 'ios':
++    o['variables']['cargo_rust_target'] = (
++      'x86_64-apple-ios' if target_arch == 'x64' else
++      'aarch64-apple-ios-sim' if options.ios_simulator else 'aarch64-apple-ios')
++
+   # Allow overriding the compiler - needed by embedders.
+   if options.use_clang:
+     o['variables']['clang'] = 1

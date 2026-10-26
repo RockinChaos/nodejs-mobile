@@ -1,28 +1,10 @@
 Source: nodejs-mobile/nodejs-mobile@1f3b514d6e2e2b83562b24f230566ed9dda2bad5
 
-diff --git a/deps/v8/src/trap-handler/handler-outside.cc b/deps/v8/src/trap-handler/handler-outside.cc
-index 6e2b40d9f5ec1e23f06e25f0bd7daad30ea49f08..ede435b302cf1504c151eab10a36c1438fdb826b 100644
---- a/deps/v8/src/trap-handler/handler-outside.cc
-+++ b/deps/v8/src/trap-handler/handler-outside.cc
-@@ -307,11 +307,13 @@ bool EnableTrapHandler(bool use_v8_handler) {
-   if (!V8_TRAP_HANDLER_SUPPORTED) {
-     return false;
-   }
-+#if V8_TRAP_HANDLER_SUPPORTED
-   if (use_v8_handler) {
-     g_is_trap_handler_enabled = RegisterDefaultTrapHandler();
-     return g_is_trap_handler_enabled;
-   }
-   g_is_trap_handler_enabled = true;
-+#endif
-   return true;
- }
- 
 diff --git a/deps/v8/src/trap-handler/trap-handler.h b/deps/v8/src/trap-handler/trap-handler.h
-index bd6f19593d3dca3f1431468decc9e7263b5afb14..b330d199ecb9765b062e2953d285fc118b006d20 100644
+index 16215ece14902656609cffaea9c2f4877e3315db..1e40727be25aa8dcaea5d44fa2834c630ec577c6 100644
 --- a/deps/v8/src/trap-handler/trap-handler.h
 +++ b/deps/v8/src/trap-handler/trap-handler.h
-@@ -15,45 +15,8 @@
+@@ -15,49 +15,8 @@
  
  namespace v8::internal::trap_handler {
  
@@ -31,10 +13,14 @@ index bd6f19593d3dca3f1431468decc9e7263b5afb14..b330d199ecb9765b062e2953d285fc11
 -    ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN || \
 -     V8_OS_FREEBSD)
 -#define V8_TRAP_HANDLER_SUPPORTED true
--// Arm64 (non-simulator) on Linux, Windows, MacOS.
+-// Arm64 native on Linux, Windows, MacOS.
 -#elif V8_TARGET_ARCH_ARM64 && V8_HOST_ARCH_ARM64 && \
 -    ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN)
 -#define V8_TRAP_HANDLER_SUPPORTED true
+-// For Linux and Mac, enable the simulator when it's been requested.
+-#if USE_SIMULATOR && ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_DARWIN)
+-#define V8_TRAP_HANDLER_VIA_SIMULATOR
+-#endif
 -// Arm64 simulator on x64 on Linux, Mac, or Windows.
 -//
 -// The simulator case uses some inline assembly code, which cannot be

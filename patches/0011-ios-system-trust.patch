@@ -1,10 +1,10 @@
 Source: nodejs-mobile/nodejs-mobile@b462916d69de0ac20c369ec569d1982ca212159f
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 71debb0805b62deba0b941fc7679b08a9c41d542..1c8c2ed67c2ecd9c25681d0720011c217dee207f 100644
+index 64be71541fe3bdfac768d799d401a7cbcb563879..c05895744285fea891e96e09d7f168b8634e969e 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -339,6 +339,7 @@
+@@ -321,6 +321,7 @@
  // See https://chromium.googlesource.com/chromium/src/+/HEAD/LICENSE for
  // details.
  #ifdef __APPLE__
@@ -12,7 +12,7 @@ index 71debb0805b62deba0b941fc7679b08a9c41d542..1c8c2ed67c2ecd9c25681d0720011c21
  TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
                                                bool is_self_issued) {
    // Trust settings may be scoped to a single application
-@@ -457,6 +458,7 @@
+@@ -439,6 +440,7 @@
    }
    return TrustStatus::UNSPECIFIED;
  }
@@ -20,7 +20,7 @@ index 71debb0805b62deba0b941fc7679b08a9c41d542..1c8c2ed67c2ecd9c25681d0720011c21
 
  bool IsCertificateTrustValid(SecCertificateRef ref) {
    SecTrustRef sec_trust = nullptr;
-@@ -498,6 +500,7 @@
+@@ -480,6 +482,7 @@
  }
 
  bool IsCertificateTrustedForPolicy(X509* cert, SecCertificateRef ref) {
@@ -28,7 +28,7 @@ index 71debb0805b62deba0b941fc7679b08a9c41d542..1c8c2ed67c2ecd9c25681d0720011c21
    OSStatus err;
 
    bool trust_evaluated = false;
-@@ -542,6 +545,9 @@
+@@ -524,6 +527,9 @@
      }
    }
    return false;

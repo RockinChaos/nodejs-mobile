@@ -4,34 +4,48 @@ This guide builds the Android and iOS libraries. Run the commands from the repos
 
 ## Prerequisites
 
-Install Git, Python 3.13, Clang, Clang++ and Ninja, and make them available on `PATH`. The commands below use `python3`; it must resolve to the intended Python installation.
+Install Git, Python 3.13, Clang, Clang++, Ninja, and Rust 1.86 or newer with Cargo, and make them available on `PATH`. The commands below use `python3`; it must resolve to the intended Python installation.
 
 ### Android prerequisites
 
-Use an x86_64 Linux host with Android NDK r27d. Android builds target API 24 by default; `--api` can select a newer API, with 24 as the minimum.
+Use an x86_64 Linux host with Android NDK r29. Android builds target API 24 by default; `--api` can select a newer API, with 24 as the minimum.
 
-The `arm` build also requires 32-bit host C/C++ support. On Ubuntu or Debian, install it with:
+Use Clang 19.1 or newer for the host tools. The `arm` build also requires 32-bit host C/C++ support. On Ubuntu or Debian, install it with:
 
 ```sh
-sudo apt-get install -y gcc-multilib g++-multilib
+sudo apt-get install -y clang-19 gcc-multilib g++-multilib
+export CC_host=clang-19
+export CXX_host=clang++-19
+```
+
+Install the Rust targets used by the Android builds:
+
+```sh
+rustup target add armv7-linux-androideabi aarch64-linux-android x86_64-linux-android i686-unknown-linux-gnu
 ```
 
 Set `ANDROID_NDK_HOME` to the extracted NDK directory before building:
 
 ```sh
-export ANDROID_NDK_HOME=/path/to/android-ndk-r27d
+export ANDROID_NDK_HOME=/path/to/android-ndk-r29
 ```
 
 ### iOS prerequisites
 
-Use macOS with Xcode 16.4 and its iOS SDKs. Builds target iOS 14 or newer. The `x64-simulator` target requires an Intel Mac; CI builds the ARM64 device and simulator targets on Apple Silicon.
+Use macOS with Xcode 26.3 and its iOS SDKs. Builds target iOS 14 or newer. The `x64-simulator` target requires an Intel Mac; CI builds the ARM64 device and simulator targets on Apple Silicon.
 
-If multiple Xcode versions are installed, select Xcode 16.4 for the build:
+If multiple Xcode versions are installed, select Xcode 26.3 for the build:
 
 ```sh
-export DEVELOPER_DIR=/Applications/Xcode_16.4.app/Contents/Developer
+export DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer
 xcrun --sdk iphoneos --show-sdk-path
 xcrun --sdk iphonesimulator --show-sdk-path
+```
+
+Install the Rust targets for the iOS slices you will build on this Mac:
+
+```sh
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
 ```
 
 Adjust `DEVELOPER_DIR` if Xcode is installed at a different path. Use the same Xcode version when building and combining framework slices.
