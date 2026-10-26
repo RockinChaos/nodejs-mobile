@@ -136,16 +136,6 @@ def strip_android(library, symbols, toolchain):
     print(f'{library}: {size:.2f} MiB after stripping.', flush=True)
 
 
-def strip_ios(library, symbols):
-    symbols.parent.mkdir(parents=True)
-    run(['xcrun', 'dsymutil', library, '-o', symbols])
-    if not (symbols / 'Contents/Resources/DWARF/NodeMobile').is_file():
-        raise RuntimeError('Missing iOS debugging symbols.')
-    run(['xcrun', 'strip', '-S', '-x', library])
-    run(['xcrun', 'codesign', '--force', '--sign', '-', library])
-    run(['xcrun', 'codesign', '--verify', '--strict', library])
-
-
 def record(destination, source, target):
     lock = json.loads((ROOT / 'node-source.json').read_text())
     lock['target'] = target
@@ -271,7 +261,6 @@ def build_ios(args):
          '-install_name', '@rpath/NodeMobile.framework/NodeMobile',
          '-current_version', '1', '-compatibility_version', '1',
          '-o', framework / 'NodeMobile'])
-    strip_ios(framework / 'NodeMobile', output / 'symbols' / args.target / 'NodeMobile.framework.dSYM')
     verify_exports(['xcrun', 'nm', '-gU', framework / 'NodeMobile'], '_')
     exports = subprocess.check_output(['xcrun', 'nm', '-gU', framework / 'NodeMobile'], text=True)
     if '_node_start' not in exports.split():

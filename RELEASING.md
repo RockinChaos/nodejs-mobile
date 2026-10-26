@@ -25,7 +25,6 @@ Each draft receives:
 
 - `nodejs-mobile-v<release-version>-android.zip`
 - `nodejs-mobile-v<release-version>-ios.zip`
-- `versions.txt`
 
 The release ZIPs are the combined workflow archives, renamed without unpacking or repackaging. This preserves their contents and file permissions. Existing draft notes and matching assets are replaced by the next successful build.
 

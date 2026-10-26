@@ -399,4 +399,3 @@ jobs:
           files: |
             .build/release/nodejs-mobile-${{ env.RELEASE_TAG }}-android.zip
             .build/release/nodejs-mobile-${{ env.RELEASE_TAG }}-ios.zip
-            .build/release/versions.txt
