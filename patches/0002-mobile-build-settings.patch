@@ -11,15 +11,15 @@ Source: nodejs-mobile/nodejs-mobile@255f34b13e03e36e91b8dbc879947db50d72027d
 Source: nodejs-mobile/nodejs-mobile@474a13a70da73d3e65bda17cd83cad7403e80ed4
 
 diff --git a/common.gypi b/common.gypi
-index b4161293343cc05a868d2734419367fc7146a664..92929705fb74c5e9189ddaa27170ccffdea3a537 100644
+index 685e03628195666dd74b53932f99562a33556a43..e27c49bd52f386aeec0d8daf12be8bdd0f5668d9 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -42,7 +42,7 @@
  
      # Reset this number to 0 on major V8 upgrades.
      # Increment by one for each non-official patch applied to deps/v8.
--    'v8_embedder_string': '-node.58',
-+    'v8_embedder_string': '-node.58-mobile.0',
+-    'v8_embedder_string': '-node.63',
++    'v8_embedder_string': '-node.63-mobile.0',
  
      ##### V8 defaults for Node.js #####
  
