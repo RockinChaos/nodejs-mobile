@@ -1,7 +1,7 @@
 Source: nodejs-mobile/nodejs-mobile@b462916d69de0ac20c369ec569d1982ca212159f
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 64be71541fe3bdfac768d799d401a7cbcb563879..c05895744285fea891e96e09d7f168b8634e969e 100644
+index de1f3af17b84fc09e528d79c18200a8560dacdd6..511b00d65ed1e50cfe60aaacadd8da98c5a71be7 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -321,6 +321,7 @@
