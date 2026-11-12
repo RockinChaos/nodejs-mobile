@@ -1,8 +1,10 @@
 [changelog]
 header = ""
 body = '''
-{% for commit in commits -%}
+{% for group in commits | commit_groups(groups=commit_parsers_groups) -%}
+{% for commit in group.commits -%}
 - {{ commit.message | split(pat="\n") | first }} ({{ commit.id | truncate(length=7, end="") }})
+{% endfor -%}
 {% endfor -%}
 '''
 footer = ""
@@ -11,4 +13,16 @@ trim = true
 [git]
 conventional_commits = false
 filter_unconventional = false
+commit_parsers = [
+  { message = "^feat", group = "feat" },
+  { message = "^fix", group = "fix" },
+  { message = "^perf", group = "perf" },
+  { message = "^refactor", group = "refactor" },
+  { message = "^doc", group = "docs" },
+  { message = "^build", group = "build" },
+  { message = "^ci", group = "ci" },
+  { message = "^chore", group = "chore" },
+  { message = "^revert", group = "revert" },
+  { message = ".*", group = "other" },
+]
 sort_commits = "newest"
