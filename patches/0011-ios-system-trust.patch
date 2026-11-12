@@ -1,7 +1,7 @@
 Source: nodejs-mobile/nodejs-mobile@b462916d69de0ac20c369ec569d1982ca212159f
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index da28cfdec336039f5d120209dff3a36f3278f885..8d616c611636259da4b7a94f7501f9e7caf48ce5 100644
+index df6e9440e518f69e68d254cf0fb0091f8e880bbf..258be5302be2911fe5d2cacd587e8791954358dd 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -312,6 +312,8 @@ bool isSelfIssued(X509* cert) {
